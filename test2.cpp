@@ -52,9 +52,9 @@ void SetPixel(SDL_Surface * surface, int x,int y, uint8_t R, uint8_t G, uint8_t 
 	SDL_LockSurface(surface);
 	//SDL_memset(screen->pixels,255,screen->h * screen->pitch);
 	uint8_t* pixelArray = (uint8_t*) surface->pixels;
-	pixelArray[y*surface->pitch +x*surface->format->BytesPerPixel + 0] = R;
+	pixelArray[y*surface->pitch +x*surface->format->BytesPerPixel + 0] = B;
 	pixelArray[y*surface->pitch +x*surface->format->BytesPerPixel + 1] = G;
-	pixelArray[y*surface->pitch +x*surface->format->BytesPerPixel + 2] = B;
+	pixelArray[y*surface->pitch +x*surface->format->BytesPerPixel + 2] = R;
 	SDL_UnlockSurface(surface);
 }
 
@@ -79,8 +79,8 @@ int WinMain( int argc, char* args[] )
 		else
 		{
             window = SDL_CreateWindow("test2",20,20,SCREEN_WIDTH,SCREEN_HEIGHT,SDL_WINDOW_SHOWN);
-            screen = SDL_GetWindowSurface(window);
-                        
+            //screen = SDL_GetWindowSurface(window);
+            renderer = SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED);
 			//Main loop flag
 			bool quit = false;
 
@@ -102,15 +102,39 @@ int WinMain( int argc, char* args[] )
 					{
 						quit = true;
 					}
-					else if( e.button.button == SDL_BUTTON_LEFT){
+					/*else if( e.button.button == SDL_BUTTON_LEFT){
 						buttons = SDL_GetMouseState(&mx,&my);
-						SetPixel(screen, mx, my, 255 ,255,255 );
+						SetPixel(screen, mx, my, 255 ,0,0 );
 						
 						std::cout<<"left mouse clicked "<<mx<<' '<<my<<'\n';
 					}
-		
+					else if( e.button.button == SDL_BUTTON_RIGHT){
+						buttons = SDL_GetMouseState(&mx,&my);
+						SetPixel(screen, mx, my, 0 ,0,255 );
+						
+						std::cout<<"left mouse clicked "<<mx<<' '<<my<<'\n';
+					}*/		
 				}
-				SDL_UpdateWindowSurface(window);
+				//wipeout the content, provide clean canvas
+				SDL_SetRenderDrawColor(renderer, 5,5,5,SDL_ALPHA_OPAQUE);
+				SDL_RenderClear(renderer);
+				//set draw color
+				SDL_SetRenderDrawColor(renderer, 255,255,255,SDL_ALPHA_OPAQUE);
+				//draw
+				SDL_RenderDrawLine(renderer,5,5,100,100);
+
+				//create rectangle
+				SDL_Rect rectangle;
+				rectangle.x = 100;
+				rectangle.y = 100;
+				rectangle.w = 200;
+				rectangle.h = 100;
+				//SDL_RenderDrawRect(renderer,&rectangle);
+				SDL_RenderFillRect(renderer,&rectangle);
+				//show content
+				SDL_RenderPresent(renderer);
+
+				
 
                 
 
