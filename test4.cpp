@@ -1,22 +1,16 @@
 #include <iostream>
 #include <SDL.h>
-//#include <SDL2_gfxPrimitives.h>
 #include <cmath>
 #include <algorithm>
 #include <vector>
-//#include <SDL2_gfx>
-/*extern "C" {
-    #include "src\gfx\SDL2_gfxPrimitives.c"
-}*/
-#include <SDL2_gfxPrimitives.h>
 
 
-const int SCREEN_WIDTH = 1024;
-const int SCREEN_HEIGHT = 768;
+
+const int SCREEN_WIDTH = 1200;
+const int SCREEN_HEIGHT = 720;
 
 int segement_length = 200;
 int road_width = 2000;
-double camD = 0.84; //Camera Depth
 
 SDL_Window * window = NULL;
 SDL_Surface * surface = NULL;
@@ -29,26 +23,39 @@ SDL_Color Dark_Green= {.r = 0, .g = 102, .b = 0, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Light_Green= {.r = 0, .g = 255, .b = 0, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Dark_Road= {.r = 100, .g = 100, .b = 100, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Light_Road= {.r = 105, .g = 105, .b = 105, .a = SDL_ALPHA_OPAQUE};
+SDL_Color Blue_Sky= {.r = 53, .g = 81, .b = 92, .a = SDL_ALPHA_OPAQUE};
 
+class Camera3D{
+    public:
+        double x, y ,z, D;
+        Camera3D(){
+            x=0, y=1000, z=0, D=0.84;
+        }
+        Camera3D(double a, double b, double c, double d){
+            x=a, y=b, z=c, D = d;
+        }
+};
 
 class Line3D{
     public :
         double x,y,z; //3D center coordinate of line
         int screenX,screenY,width; //line coordinate on screen 
+        double scale, curve;
 
         Line3D(){
-            x=0;
-            y=0;
-            z=0;
+            x=0, y=0, z=0, scale=0, curve=0;
         }
         //3D coordinate to screen coordinate
-        void project(int camx, int camy, int camz){
-            double scale = camD/(z-camz);
-            screenX = (int) ((1 + scale*( x - camx))*SCREEN_WIDTH/2);
-            screenY = (int) ((1 - scale*( y - camy))*SCREEN_HEIGHT/2);
+        void project(Camera3D * cam){
+            double delta_z = (z - cam->z == 0.0 ? 1 : z - cam->z);
+            double scale = cam->D/(z-cam->z);
+            screenX = (int) ((1 + scale*( x - cam->x ))*SCREEN_WIDTH / 2);
+            screenY = (int) ((1 - scale*( y - cam->y ))*SCREEN_HEIGHT / 2);
             width = (int) (scale * road_width * SCREEN_WIDTH / 2);
         }
 };
+
+
 
 bool init(){
     //Initialization flag
@@ -90,30 +97,34 @@ void close(){
 
 //(x1,y1)corresponds to the coordinate of the line center on screen, w1 is the width of line
 void draw_quad(SDL_Renderer * renderer, int x1, int y1, int w1, int x2, int y2, int w2, SDL_Color color){
-    if(y1>y2){
-        std::swap(y1,y2);
-        std::swap(x1,x2);
-        std::swap(w1,w2);
+    float p1x = (float) ( x1-w1>0 ? x1-w1 : 0 );
+    float p1y = (float) y1;
+    float p2x = (float) ( x1+w1<SCREEN_WIDTH ? x1+w1 : SCREEN_WIDTH - 1 );
+    float p2y = (float) y1;
+    float p3x = (float) ( x2+w2<SCREEN_WIDTH ? x2+w2 : SCREEN_WIDTH - 1 );
+    float p3y = (float) y2;
+    float p4x = (float) ( x2-w2>0 ? x2-w2 : 0 );
+    float p4y = (float) y2;
+    if(y2==y1){
+        SDL_SetRenderDrawColor(renderer, color.r, color.g,color.b,color.a);
+        SDL_RenderDrawLine(renderer, x1,y1,x2,y2);
     }
-
-    //else{
+    else if(y2-y1 >= 1 || y2-y1 <= -1){
         std::vector< SDL_Vertex > verts1 =
         {
-            { SDL_FPoint{ x1-w1, y1 }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
-            { SDL_FPoint{ x1+w1, y1 }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
-            { SDL_FPoint{ x2-w2, y2 }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
+            { SDL_FPoint{ p1x, p1y }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
+            { SDL_FPoint{ p2x, p2y }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
+            { SDL_FPoint{ p3x, p3y }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
         };
         SDL_RenderGeometry(renderer, NULL,verts1.data(), verts1.size(), NULL,0 );
         std::vector< SDL_Vertex > verts2 =
         {
-            { SDL_FPoint{ x2-w2, y2 }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
-            { SDL_FPoint{ x1+w1, y1 }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
-            { SDL_FPoint{ x2+w2, y2 }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
+            { SDL_FPoint{ p1x, p1y }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
+            { SDL_FPoint{ p3x, p3y }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
+            { SDL_FPoint{ p4x, p4y }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
         };
-        SDL_RenderGeometry(renderer, NULL,verts2.data(), verts2.size(), NULL,0 );
-
-
-    //}
+        SDL_RenderGeometry(renderer, NULL,verts2.data(), verts2.size(), NULL,0 );        
+    }
 /*
     std::vector< SDL_Vertex > verts =
     {
@@ -146,13 +157,13 @@ void draw_quad(SDL_Renderer * renderer, int x1, int y1, int w1, int x2, int y2, 
     */
 }
 
-void draw_scene(SDL_Renderer * renderer, Line3D * lines, int camZ, int n, int N){
-    int start_pos = camZ / segement_length;
-    for(int i = 1+start_pos ; i < n+start_pos ; i++){
-        Line3D * curr_line = &lines[i%N];
-        Line3D * prev_line = &lines[(i-1)%N];
-        prev_line->project(1,1500,camZ);
-        curr_line->project(1,1500,camZ);
+void draw_scene(SDL_Renderer * renderer, Line3D * lines, Camera3D * cam, int lines_drawn, int total_lines){
+    int start_pos = cam->z / segement_length;
+    for(int i = 1+start_pos ; i < lines_drawn+start_pos ; i++){
+        Line3D * curr_line = &lines[i % total_lines];
+        Line3D * prev_line = &lines[(i-1) % total_lines];
+        prev_line->project(cam);
+        curr_line->project(cam);
 
         SDL_Color grass = (i/3)%2 ? Light_Green : Dark_Green;
         SDL_Color rumble = (i/3)%2 ? White : Black;
@@ -164,11 +175,7 @@ void draw_scene(SDL_Renderer * renderer, Line3D * lines, int camZ, int n, int N)
         draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width*1.2 , curr_line->screenX ,curr_line->screenY, curr_line->width*1.2 , rumble);
         draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width , curr_line->screenX ,curr_line->screenY, curr_line->width , road);
         //draw_quad(renderer, 50,50,50,200,200,100,Light_Road);
-
-    
-    
-        
-        
+        draw_quad(renderer, SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2, Blue_Sky); 
     }
 }
 
@@ -196,13 +203,19 @@ int WinMain(){
             SDL_Event e;
 
             //Create Lines
-            int N = 1600 ,camZ = 1;
+            int N = 2000 ;
             Line3D * Line3DArray = new Line3D[N];
             for(int i = 0 ; i < N ; i++){
                 Line3D line;
                 Line3DArray[i] = line;
                 Line3DArray[i].z = segement_length * i;
             }
+
+            for(int i = N/4 ; i < N/3 ; i++){}
+
+            //Create Camera
+            Camera3D * cam = new Camera3D(0,1500,0,0.84);
+
 
 
             //Clear renderer
@@ -213,11 +226,6 @@ int WinMain(){
             while( !quit ){
                 //calculate time
                 Uint32 time_start = SDL_GetTicks();
-
-
-
-
-
                 //Handle event on queue
                 while( SDL_PollEvent( &e ) != 0){
                     if( e.type == SDL_QUIT ){
@@ -227,24 +235,24 @@ int WinMain(){
                         switch( e.key.keysym.sym )
 						{
 							case SDLK_UP:
-                                camZ+=500;
-							break;
+                                cam->z+=100;
+							    break;
 
 							case SDLK_DOWN:
-                                camZ-=500;
-							break;
+                                cam->z-=100;
+							    break;
 
 							case SDLK_LEFT:
-							
-							break;
+                                cam->x-=100;
+							    break;
 
 							case SDLK_RIGHT:
-							
-							break;
+                                cam->x+=100;
+							    break;
 
 							default:
 							
-							break;
+							    break;
 						}
                     }
                     else{
@@ -260,7 +268,7 @@ int WinMain(){
                 
 
                 //Draw Scene
-                draw_scene(renderer, Line3DArray, camZ ,300,N);
+                draw_scene(renderer, Line3DArray, cam ,300,N);
                 
 
                 //Present
@@ -268,13 +276,12 @@ int WinMain(){
                 
                 
                 //cap framerate
-                framerate_cap(time_start, 1000);
-                //std::cout<<"haha\n";
+                //framerate_cap(time_start, 1000);
 
                 
             }
             delete [] Line3DArray;
-            //delete Line3DArray;
+            delete cam;
             
         }
     }
