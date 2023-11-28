@@ -9,6 +9,7 @@
 
 const int SCREEN_WIDTH = 1200;
 const int SCREEN_HEIGHT = 720;
+const Uint8* keyarr = SDL_GetKeyboardState(NULL);
 
 int segement_length = 200;
 int road_width = 2000;
@@ -17,6 +18,11 @@ SDL_Window * window = NULL;
 SDL_Surface * surface = NULL;
 SDL_Texture * texture = NULL;
 SDL_Renderer * renderer = NULL;
+//Globally used font
+TTF_Font* gFont = NULL;
+
+//Rendered texture
+LTexture gTextTexture;
 
 SDL_Color White= {.r = 255, .g = 255, .b = 255, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Black= {.r = 0, .g = 0, .b = 0, .a = SDL_ALPHA_OPAQUE};
@@ -27,7 +33,83 @@ SDL_Color Light_Road= {.r = 105, .g = 105, .b = 105, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Blue_Sky= {.r = 53, .g = 81, .b = 92, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Water= {.r = 15, .g = 94, .b = 156, .a = SDL_ALPHA_OPAQUE};
 
+//Texture wrapper class
+class LTexture
+{
+    public:
+        //Initializes variables
+        LTexture();
 
+        //Deallocates memory
+        ~LTexture();
+
+        //Loads image at specified path
+        bool loadFromFile( std::string path );
+        
+        //Creates image from font string
+        bool loadFromRenderedText( SDL_Renderer renderer ,std::string textureText, SDL_Color textColor );
+
+        //Deallocates texture
+        void free();
+
+        //Set color modulation
+        void setColor( Uint8 red, Uint8 green, Uint8 blue );
+
+        //Set blending
+        void setBlendMode( SDL_BlendMode blending );
+
+        //Set alpha modulation
+        void setAlpha( Uint8 alpha );
+        
+        //Renders texture at given point
+        void render( int x, int y, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE );
+
+        //Gets image dimensions
+        int getWidth();
+        int getHeight();
+
+    private:
+        //The actual hardware texture
+        SDL_Texture* mTexture;
+
+        //Image dimensions
+        int mWidth;
+        int mHeight;
+};
+
+bool LTexture::loadFromRenderedText( SDL_Renderer renderer, std::string textureText, SDL_Color textColor )
+{
+    //Get rid of preexisting texture
+    free();
+
+    //Render text surface
+    SDL_Surface* textSurface = TTF_RenderText_Solid( gFont, textureText.c_str(), textColor );
+    if( textSurface == NULL )
+    {
+        printf( "Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError() );
+    }
+    else
+    {
+        //Create texture from surface pixels
+        mTexture = SDL_CreateTextureFromSurface( renderer, textSurface );
+        if( mTexture == NULL )
+        {
+            printf( "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError() );
+        }
+        else
+        {
+            //Get image dimensions
+            mWidth = textSurface->w;
+            mHeight = textSurface->h;
+        }
+
+        //Get rid of old surface
+        SDL_FreeSurface( textSurface );
+    }
+    
+    //Return success
+    return mTexture != NULL;
+}
 
 class Camera3D{
     public:
@@ -189,6 +271,34 @@ void draw_scene(SDL_Renderer * renderer, Line3D * lines, Camera3D * cam, int lin
     //cam->x+=cam->vx;    
 }
 
+void draw_objects(){}
+
+void draw_words(SDL_Renderer * renderer){
+    SDL_Rect BottomRightViewport;
+    BottomRightViewport.x = SCREEN_WIDTH * 9 / 10;
+    BottomRightViewport.y = SCREEN_WIDTH * 9 / 10;
+    BottomRightViewport.w = SCREEN_WIDTH / 10;
+    BottomRightViewport.h = SCREEN_HEIGHT / 10;
+    SDL_RenderSetViewport( renderer, &BottomRightViewport );
+
+    gFont = TTF_OpenFont( "ark-pixel-10px-monospaced-zh_tw.ttf", 10 );
+    if( gFont == NULL )
+    {
+        printf( "Failed to load font! SDL_ttf Error: %s\n", TTF_GetError() );
+    }
+    else
+    {
+        //Render text
+        SDL_Color textColor = { 0, 0, 0 };
+        if( !gTextTexture.loadFromRenderedText( "The quick brown fox jumps over the lazy dog", textColor ) )
+        {
+            printf( "Failed to render text texture!\n" );
+        }
+    }
+    SDL_RenderSetViewport( renderer, NULL );
+
+}
+
 void framerate_cap(Uint32 start, int fps){
     double ms_per_frame = 1000/fps;
     double elapsed_time = (double) (SDL_GetTicks() - start);
@@ -240,7 +350,7 @@ int WinMain(){
             }
 
             //Create Camera
-            Camera3D * cam = new Camera3D(0,2500,0,0.84,0,0);
+            Camera3D * cam = new Camera3D(0,1500,0,0.84,0,0);
 
 
 
@@ -260,15 +370,23 @@ int WinMain(){
                     }
                     
                     else if(e.type == SDL_KEYDOWN){
-                        switch( e.key.keysym.sym )
+                        SDL_PumpEvents();
+                        if(keyarr[SDL_SCANCODE_UP])
+                            cam->vz+=10;
+                        if(keyarr[SDL_SCANCODE_DOWN])
+                            cam->vz-=10;
+                        if(keyarr[SDL_SCANCODE_LEFT])
+                            cam->x-=30;
+                        if(keyarr[SDL_SCANCODE_RIGHT])
+                            cam->x+=30;
+                        /*switch( e.key.keysym.sym )
 						{
-							case SDLK_UP:
-                                cam->vz+=10;
-							    break;
+							//case SDLK_UP:
+                                //cam->vz+=10;
+							    //break;
 
 							case SDLK_DOWN:
                                 cam->vz-=10;
-                                cam->vz = ( cam->vz>0 ? cam->vz : 0);
 							    break;
 
 							case SDLK_LEFT:
@@ -284,7 +402,7 @@ int WinMain(){
 							default:
 							
 							    break;
-						}
+						}*/
                     }
                     else{
                         //do keyboard or mouse interaction event
