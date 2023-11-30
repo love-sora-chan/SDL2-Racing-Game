@@ -5,14 +5,16 @@
 #include <cmath>
 #include <algorithm>
 #include <vector>
+#include <sstream>
+#include <iomanip>
 
 
 const int SCREEN_WIDTH = 1200;
 const int SCREEN_HEIGHT = 720;
 const Uint8* keyarr = SDL_GetKeyboardState(NULL);
 
-int segement_length = 200;
-int road_width = 2000;
+int segement_length = 400;
+int road_width = 800;
 
 SDL_Window * window = NULL;
 SDL_Surface * surface = NULL;
@@ -21,8 +23,7 @@ SDL_Renderer * renderer = NULL;
 //Globally used font
 TTF_Font* gFont = NULL;
 
-//Rendered texture
-LTexture gTextTexture;
+
 
 SDL_Color White= {.r = 255, .g = 255, .b = 255, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Black= {.r = 0, .g = 0, .b = 0, .a = SDL_ALPHA_OPAQUE};
@@ -44,10 +45,10 @@ class LTexture
         ~LTexture();
 
         //Loads image at specified path
-        bool loadFromFile( std::string path );
+        bool loadFromFile( SDL_Renderer * renderer , std::string path );
         
         //Creates image from font string
-        bool loadFromRenderedText( SDL_Renderer renderer ,std::string textureText, SDL_Color textColor );
+        bool loadFromRenderedText( SDL_Renderer * renderer ,std::string textureText, SDL_Color textColor );
 
         //Deallocates texture
         void free();
@@ -62,7 +63,7 @@ class LTexture
         void setAlpha( Uint8 alpha );
         
         //Renders texture at given point
-        void render( int x, int y, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE );
+        void render(SDL_Renderer * renderer , int x, int y, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE );
 
         //Gets image dimensions
         int getWidth();
@@ -77,7 +78,66 @@ class LTexture
         int mHeight;
 };
 
-bool LTexture::loadFromRenderedText( SDL_Renderer renderer, std::string textureText, SDL_Color textColor )
+
+//Rendered texture
+LTexture  gTextTexture;
+
+LTexture::LTexture()
+{
+	//Initialize
+	mTexture = NULL;
+	mWidth = 0;
+	mHeight = 0;
+}
+
+LTexture::~LTexture()
+{
+	//Deallocate
+	free();
+}
+
+bool LTexture::loadFromFile( SDL_Renderer * renderer ,std::string path )
+{
+	//Get rid of preexisting texture
+	free();
+
+	//The final texture
+	SDL_Texture* newTexture = NULL;
+
+	//Load image at specified path
+	SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
+	if( loadedSurface == NULL )
+	{
+		printf( "Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError() );
+	}
+	else
+	{
+		//Color key image
+		SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, 0, 0xFF, 0xFF ) );
+
+		//Create texture from surface pixels
+        newTexture = SDL_CreateTextureFromSurface( renderer, loadedSurface );
+		if( newTexture == NULL )
+		{
+			printf( "Unable to create texture from %s! SDL Error: %s\n", path.c_str(), SDL_GetError() );
+		}
+		else
+		{
+			//Get image dimensions
+			mWidth = loadedSurface->w;
+			mHeight = loadedSurface->h;
+		}
+
+		//Get rid of old loaded surface
+		SDL_FreeSurface( loadedSurface );
+	}
+
+	//Return success
+	mTexture = newTexture;
+	return mTexture != NULL;
+}
+
+bool LTexture::loadFromRenderedText( SDL_Renderer * renderer, std::string textureText, SDL_Color textColor )
 {
     //Get rid of preexisting texture
     free();
@@ -111,14 +171,103 @@ bool LTexture::loadFromRenderedText( SDL_Renderer renderer, std::string textureT
     return mTexture != NULL;
 }
 
+void LTexture::free()
+{
+	//Free texture if it exists
+	if( mTexture != NULL )
+	{
+		SDL_DestroyTexture( mTexture );
+		mTexture = NULL;
+		mWidth = 0;
+		mHeight = 0;
+	}
+}
+
+void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
+{
+	//Modulate texture rgb
+	SDL_SetTextureColorMod( mTexture, red, green, blue );
+}
+
+void LTexture::setBlendMode( SDL_BlendMode blending )
+{
+	//Set blending function
+	SDL_SetTextureBlendMode( mTexture, blending );
+}
+		
+void LTexture::setAlpha( Uint8 alpha )
+{
+	//Modulate texture alpha
+	SDL_SetTextureAlphaMod( mTexture, alpha );
+}
+
+void LTexture::render( SDL_Renderer * renderer,int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip )
+{
+	//Set rendering space and render to screen
+	SDL_Rect renderQuad = { x, y, mWidth, mHeight };
+
+	//Set clip rendering dimensions
+	if( clip != NULL )
+	{
+		renderQuad.w = clip->w;
+		renderQuad.h = clip->h;
+	}
+
+	//Render to screen
+	SDL_RenderCopyEx( renderer, mTexture, clip, &renderQuad, angle, center, flip );
+}
+
+int LTexture::getWidth()
+{
+	return mWidth;
+}
+
+int LTexture::getHeight()
+{
+	return mHeight;
+}
+
 class Camera3D{
     public:
         double x, y ,z, D, vz, vx;
         Camera3D(){
-            x=0, y=1000, z=0, D=0.84, vx = 0, vz = 0;
+            x=0, y=1000, z=0, D=5, vx = 0, vz = 0;
         }
         Camera3D(double x, double y, double z, double D, double vx,double vz){
             this->x=x, this->y=y, this->z=z, this->D=D, this->vx=vx, this->vz=vz;
+        }
+};
+
+class Car3D{
+    public:
+        bool main_car;
+
+        double x, y ,z,  vz, vx, original_scale = 5;
+        int picture_width, picture_height;
+
+        std::string file_pos;
+
+        int screenX,screenY;
+        double scale;
+        Car3D(int picture_width, int picture_height, std::string file_pos , bool main_car){
+            x=0, y=0, z=1, vx = 0, vz = 0;
+            this->picture_width=picture_width, this->picture_height = picture_height, this->file_pos = file_pos, this->main_car = main_car;
+        }        
+        Car3D(double x, double y, double z, double vx,double vz, double original_scale, int picture_width, int picture_height, std::string file_pos , bool main_car){
+            this->x=x, this->y=y, this->z=z,  this->vx=vx, this->vz=vz, this->original_scale = original_scale, this->picture_width=picture_width, this->picture_height = picture_height, this->file_pos = file_pos, this->main_car = main_car;
+        }
+
+        void project(Camera3D * cam){
+            scale = cam->D/(z-cam->z);
+            x+=vx;
+            z+=vz;
+
+            if(main_car==1){cam->vx=vx; cam->vz=vz;}
+
+            scale = 0.1;
+            screenX = (int) ((1 + scale*( x - cam->x ))*SCREEN_WIDTH / 2);
+            //screenY = (int) ((1 - scale*( y - cam->y ))*SCREEN_HEIGHT / 2);
+            screenY = SCREEN_HEIGHT *4/5 ;
         }
 };
 
@@ -133,7 +282,7 @@ class Line3D{
         }
         //3D coordinate to screen coordinate
         void project(Camera3D * cam){
-            double delta_z = (z - cam->z == 0.0 ? 1 : z - cam->z);
+            double delta_z = (z - cam->z <= 10 ? 10 : z - cam->z);
             scale = cam->D/(z-cam->z);
             screenX = (int) ((1 + scale*( x - cam->x ))*SCREEN_WIDTH / 2);
             screenY = (int) ((1 - scale*( y - cam->y ))*SCREEN_HEIGHT / 2);
@@ -141,6 +290,33 @@ class Line3D{
         }
 };
 
+
+SDL_Texture* loadTexture( SDL_Renderer * renderer, std::string path )
+{
+	//The final texture
+	SDL_Texture* newTexture = NULL;
+
+	//Load image at specified path
+	SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
+	if( loadedSurface == NULL )
+	{
+		printf( "Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError() );
+	}
+	else
+	{
+		//Create texture from surface pixels
+        newTexture = SDL_CreateTextureFromSurface( renderer, loadedSurface );
+		if( newTexture == NULL )
+		{
+			printf( "Unable to create texture from %s! SDL Error: %s\n", path.c_str(), SDL_GetError() );
+		}
+
+		//Get rid of old loaded surface
+		SDL_FreeSurface( loadedSurface );
+	}
+
+	return newTexture;
+}
 
 
 bool init(){
@@ -160,12 +336,24 @@ bool init(){
 		}
 		else
 		{
-			//Get window surface
-			//surface = SDL_GetWindowSurface( window );
-
 			//Get Render
 			renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 		}
+        //Initialize SDL TTF
+        if( TTF_Init() == -1 )
+        {
+            printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
+            success = false;
+        }
+
+        //Initialize SDL image loader for png
+        int imgFlags = IMG_INIT_PNG;//specify using png 
+
+        if( !( IMG_Init( imgFlags ) & imgFlags ) )
+        {
+            printf( "SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError() );
+            success = false;
+        }
     }
     return success;
 }
@@ -176,6 +364,12 @@ bool loadmedia(){
 }
 
 void close(){
+    //Free loaded images
+    gTextTexture.free();
+
+    //Free global font
+    TTF_CloseFont( gFont );
+    gFont = NULL;
     SDL_DestroyRenderer(renderer);
     //SDL_DestroyWindowSurface(window);
     SDL_DestroyWindow(window);
@@ -183,19 +377,19 @@ void close(){
 
 //(x1,y1)corresponds to the coordinate of the line center on screen, w1 is the width of line
 void draw_quad(SDL_Renderer * renderer, int x1, int y1, int w1, int x2, int y2, int w2, SDL_Color color){
-    float p1x = (float) ( x1-w1>0 ? x1-w1 : 0 );
-    float p1y = (float) y1;
-    float p2x = (float) ( x1+w1<SCREEN_WIDTH ? x1+w1 : SCREEN_WIDTH - 1 );
-    float p2y = (float) y1;
-    float p3x = (float) ( x2+w2<SCREEN_WIDTH ? x2+w2 : SCREEN_WIDTH - 1 );
-    float p3y = (float) y2;
-    float p4x = (float) ( x2-w2>0 ? x2-w2 : 0 );
-    float p4y = (float) y2;
-    if(y2==y1){
+    if(0){
         SDL_SetRenderDrawColor(renderer, color.r, color.g,color.b,color.a);
         SDL_RenderDrawLine(renderer, x1,y1,x2,y2);
     }
-    else if(y2-y1 >= 1 || y2-y1 <= -1){
+    else{        
+        float p1x = (float) ( x1-w1>0 ? x1-w1 : 0 );
+        float p1y = (float) y1;
+        float p2x = (float) ( x1+w1<SCREEN_WIDTH ? x1+w1 : SCREEN_WIDTH - 1 );
+        float p2y = (float) y1;
+        float p3x = (float) ( x2+w2<SCREEN_WIDTH ? x2+w2 : SCREEN_WIDTH - 1 );
+        float p3y = (float) y2;
+        float p4x = (float) ( x2-w2>0 ? x2-w2 : 0 );
+        float p4y = (float) y2;
         std::vector< SDL_Vertex > verts1 =
         {
             { SDL_FPoint{ p1x, p1y }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
@@ -209,8 +403,10 @@ void draw_quad(SDL_Renderer * renderer, int x1, int y1, int w1, int x2, int y2, 
             { SDL_FPoint{ p3x, p3y }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
             { SDL_FPoint{ p4x, p4y }, SDL_Color{ color.r, color.g, color.b, color.a }, SDL_FPoint{ 0 }, },
         };
-        SDL_RenderGeometry(renderer, NULL,verts2.data(), verts2.size(), NULL,0 );        
+        SDL_RenderGeometry(renderer, NULL,verts2.data(), verts2.size(), NULL,0 );   
     }
+
+
 
 /*
     std::vector< SDL_Vertex > verts =
@@ -247,41 +443,92 @@ void draw_quad(SDL_Renderer * renderer, int x1, int y1, int w1, int x2, int y2, 
 void draw_scene(SDL_Renderer * renderer, Line3D * lines, Camera3D * cam, int lines_drawn, int total_lines){
     int start_pos = cam->z / segement_length;
     double x = 0, dx = 0;
+    draw_quad(renderer, SCREEN_WIDTH/2 ,0,SCREEN_WIDTH/2 , SCREEN_WIDTH/2 ,SCREEN_HEIGHT ,SCREEN_WIDTH/2, Black);
     for(int i = 1+start_pos ; i < lines_drawn+start_pos ; i++){
+
+        //while(lines[(i+skip) % total_lines])
+        
         Line3D * curr_line = &lines[i % total_lines];
         Line3D * prev_line = &lines[(i-1) % total_lines];
+
+
+
+
         cam->x -= x;
         curr_line->project(cam);
         cam->x += x;
         x+=dx; dx+=curr_line->curve;
 
+        //Skip lines that have same y coordinate 
+        int skip = 0;
+        Line3D * next_line = &lines[(i+1) % total_lines];
+        next_line->project(cam);
+        while(curr_line->screenY==next_line->screenY && curr_line->screenX==next_line->screenX){
+            skip++;
+            next_line = &lines[(i+skip+1) % total_lines];
+            cam->x -= x;
+            next_line->project(cam);
+            cam->x += x;
+            x+=dx; dx+=next_line->curve;
+        }
+        i+=skip;
+
+
         SDL_Color grass = (i/3)%2 ? Light_Green : Dark_Green;
         SDL_Color rumble = (i/3)%2 ? White : Black;
         SDL_Color road = (i/3)%2 ? Light_Road : Dark_Road;
-
+        SDL_Color road_mid_line = (i/3)%4 < 2 ? Light_Road : Dark_Road;
 
         draw_quad(renderer, 0, prev_line->screenY, SCREEN_WIDTH, 0,curr_line->screenY, SCREEN_WIDTH, Water);
         draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width*1.2 , curr_line->screenX ,curr_line->screenY, curr_line->width*1.2 , rumble);
         draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width , curr_line->screenX ,curr_line->screenY, curr_line->width , road);
+
+        if((i/3)%6 < 3){
+            draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width/32 , curr_line->screenX ,curr_line->screenY, curr_line->width/32 , White);
+        }
         //draw_quad(renderer, 50,50,50,200,200,100,Light_Road);
-        draw_quad(renderer, SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2, Blue_Sky); 
+        
+        //if(i>start_pos+280){std::cout<<curr_line->width<<' '<<prev_line->width<<'\n';}
     }
+    draw_quad(renderer, SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2, Blue_Sky); 
     cam->z+=cam->vz;
     //cam->x -= lines[1+start_pos].curve*25;
     //cam->x+=cam->vx;    
 }
 
-void draw_objects(){}
+void draw_cars(SDL_Renderer * renderer, SDL_Texture * texture, Camera3D * cam, Car3D * car){
+    texture = loadTexture(renderer, car->file_pos);
+    car->project(cam);
+    SDL_Rect CarViewport;
+    CarViewport.w = (int) car->picture_width*car->original_scale;
+    CarViewport.h = (int) car->picture_width*car->original_scale;
+    CarViewport.x = car->screenX - CarViewport.w / 2;
+    CarViewport.y = car->screenY - CarViewport.h / 2;
 
-void draw_words(SDL_Renderer * renderer){
+    //std::cout<<CarViewport.w<<' '<<CarViewport.h<<' '<<CarViewport.x<<' '<<CarViewport.y<<'\n';
+
+    /*CarViewport.w = (int) 250;
+    CarViewport.h = (int) 250;
+    CarViewport.x = 350;
+    CarViewport.y = 350;*/
+
+    SDL_RenderSetViewport( renderer, &CarViewport );
+    
+    //Render texture to screen
+    SDL_RenderCopy( renderer, texture, NULL, NULL );
+    SDL_RenderSetViewport( renderer, NULL );
+}
+
+void draw_words(SDL_Renderer * renderer, std::string ss){
+    /*
     SDL_Rect BottomRightViewport;
-    BottomRightViewport.x = SCREEN_WIDTH * 9 / 10;
-    BottomRightViewport.y = SCREEN_WIDTH * 9 / 10;
-    BottomRightViewport.w = SCREEN_WIDTH / 10;
-    BottomRightViewport.h = SCREEN_HEIGHT / 10;
+    BottomRightViewport.x = SCREEN_WIDTH *1 /2;
+    BottomRightViewport.y = SCREEN_WIDTH * 1 / 2;
+    BottomRightViewport.w = SCREEN_WIDTH / 3;
+    BottomRightViewport.h = SCREEN_HEIGHT / 3;
     SDL_RenderSetViewport( renderer, &BottomRightViewport );
-
-    gFont = TTF_OpenFont( "ark-pixel-10px-monospaced-zh_tw.ttf", 10 );
+    */
+    gFont = TTF_OpenFont( "ttf_fonts/ark-pixel-10px-monospaced-zh_tw.ttf", 10 );
     if( gFont == NULL )
     {
         printf( "Failed to load font! SDL_ttf Error: %s\n", TTF_GetError() );
@@ -290,23 +537,30 @@ void draw_words(SDL_Renderer * renderer){
     {
         //Render text
         SDL_Color textColor = { 0, 0, 0 };
-        if( !gTextTexture.loadFromRenderedText( "The quick brown fox jumps over the lazy dog", textColor ) )
+        TTF_SetFontSize(gFont, 50);
+        if( !gTextTexture.loadFromRenderedText( renderer,  ss, textColor ) )
         {
             printf( "Failed to render text texture!\n" );
         }
     }
-    SDL_RenderSetViewport( renderer, NULL );
+    gTextTexture.render(renderer, ( SCREEN_WIDTH * 9 / 10 - gTextTexture.getWidth()/ 2  ) , ( SCREEN_HEIGHT * 9 / 10 - gTextTexture.getHeight()/ 2  ) );
+    //SDL_RenderSetViewport( renderer, NULL );
 
 }
 
 void framerate_cap(Uint32 start, int fps){
+    static int cnt = 0;
     double ms_per_frame = 1000/fps;
     double elapsed_time = (double) (SDL_GetTicks() - start);
     if( elapsed_time < ms_per_frame ){
         SDL_Delay( (int) (ms_per_frame - elapsed_time) );
     }
-    //std::cout<<ms_per_frame<<' ';
+    
+    if(cnt==10){std::cout<<elapsed_time<<' ';cnt=0;}
+    else{cnt++;}
+    
 }
+
 int WinMain(){
 
     if( !init() ){
@@ -332,7 +586,7 @@ int WinMain(){
             }
             for(int i = 100 ; i < 300 ; i++){
                 //Line3DArray[i].curve = 0.5;
-                Line3DArray[i].curve = 0.5;
+                Line3DArray[i].curve = 0;
             }
             for(int i = 500 ; i < 1000 ; i++){
                 //Line3DArray[i].curve = 0.5;
@@ -350,9 +604,9 @@ int WinMain(){
             }
 
             //Create Camera
-            Camera3D * cam = new Camera3D(0,1500,0,0.84,0,0);
+            Camera3D * cam = new Camera3D(0,520,100,5,0,0);
 
-
+            Car3D * AE86 = new Car3D(100,100,"test_race_img/AE86_cropped.png",1);
 
             //Clear renderer
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -372,37 +626,33 @@ int WinMain(){
                     else if(e.type == SDL_KEYDOWN){
                         SDL_PumpEvents();
                         if(keyarr[SDL_SCANCODE_UP])
-                            cam->vz+=10;
+                            AE86->vz+=1;
                         if(keyarr[SDL_SCANCODE_DOWN])
-                            cam->vz-=10;
+                            AE86->vz-=1;
+                            AE86->vz = AE86->vz >= 0 ? AE86->vz : 0;
                         if(keyarr[SDL_SCANCODE_LEFT])
-                            cam->x-=30;
+                            AE86->x-=0.2;
                         if(keyarr[SDL_SCANCODE_RIGHT])
-                            cam->x+=30;
-                        /*switch( e.key.keysym.sym )
-						{
-							//case SDLK_UP:
-                                //cam->vz+=10;
-							    //break;
+                            AE86->x+=0.2;
 
-							case SDLK_DOWN:
-                                cam->vz-=10;
-							    break;
-
-							case SDLK_LEFT:
-                                //cam->vx-=10;
-                                cam->x -= 30;
-							    break;
-
-							case SDLK_RIGHT:
-                                //cam->vx+=10;
-                                cam->x += 30;
-							    break;
-
-							default:
-							
-							    break;
-						}*/
+                        if(keyarr[SDL_SCANCODE_Q]){
+                            cam->D+=0.1;
+                            //std::cout<<cam->D<<'\n';
+                        }
+                            
+                        if(keyarr[SDL_SCANCODE_E]){
+                            cam->D-=0.1;
+                            //std::cout<<cam->D<<'\n';
+                        }
+                        if(keyarr[SDL_SCANCODE_W]){
+                            cam->y+=5;
+                            //std::cout<<cam->y<<'\n';
+                        }
+                            
+                        if(keyarr[SDL_SCANCODE_S]){
+                            cam->y-=5;
+                            //std::cout<<cam->y<<'\n';
+                        }
                     }
                     else{
                         //do keyboard or mouse interaction event
@@ -417,7 +667,17 @@ int WinMain(){
                 
 
                 //Draw Scene
-                draw_scene(renderer, Line3DArray, cam ,300,N);
+                draw_scene(renderer, Line3DArray, cam ,1500,N);
+
+                //draw text
+                char speed_chars[10];
+                std::ostringstream stream;
+                stream << std::fixed << std::setprecision(2) << AE86->vz;
+                std::string stringValue = stream.str();
+                draw_words(renderer, stringValue );
+
+                //draw cars
+                draw_cars(renderer, texture, cam , AE86);
                 
 
                 //Present
@@ -425,7 +685,7 @@ int WinMain(){
                 
                 
                 //cap framerate
-                //framerate_cap(time_start, 1000);
+                framerate_cap(time_start, 60);
 
                 
             }
