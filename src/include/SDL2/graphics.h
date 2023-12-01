@@ -5,6 +5,6 @@
 // Guido Gonzato, PhD
 // April 19, 2022
 
-#include <SDL_bgi.h>
+#include "SDL_bgi.h"
 
 // --- End of file graphics.h

@@ -7,14 +7,15 @@
 #include <vector>
 #include <sstream>
 #include <iomanip>
+#include <utility>  
 
 
-const int SCREEN_WIDTH = 1200;
+const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
 const Uint8* keyarr = SDL_GetKeyboardState(NULL);
 
-int segement_length = 400;
-int road_width = 800;
+int segement_length = 1600;
+int road_width = 1200;
 
 SDL_Window * window = NULL;
 SDL_Surface * surface = NULL;
@@ -242,7 +243,7 @@ class Car3D{
     public:
         bool main_car;
 
-        double x, y ,z,  vz, vx, original_scale = 5;
+        double x, y ,z,  vz, vx, original_scale = 1;
         int picture_width, picture_height;
 
         std::string file_pos;
@@ -264,7 +265,7 @@ class Car3D{
 
             if(main_car==1){cam->vx=vx; cam->vz=vz;}
 
-            scale = 0.1;
+            scale = 0.01;
             screenX = (int) ((1 + scale*( x - cam->x ))*SCREEN_WIDTH / 2);
             //screenY = (int) ((1 - scale*( y - cam->y ))*SCREEN_HEIGHT / 2);
             screenY = SCREEN_HEIGHT *4/5 ;
@@ -290,6 +291,18 @@ class Line3D{
         }
 };
 
+class Map{
+public :
+    int Line_number;
+    std::pair<int,double> * nodes;
+    Line3D * lines;
+    // Nodes consists <line number, curve>, meaning from last line number(default 0) to this 
+    Map(int Line_number , std::pair<int,double> * nodes ){
+
+    };
+    Map(){}
+
+};
 
 SDL_Texture* loadTexture( SDL_Renderer * renderer, std::string path )
 {
@@ -443,15 +456,13 @@ void draw_quad(SDL_Renderer * renderer, int x1, int y1, int w1, int x2, int y2, 
 void draw_scene(SDL_Renderer * renderer, Line3D * lines, Camera3D * cam, int lines_drawn, int total_lines){
     int start_pos = cam->z / segement_length;
     double x = 0, dx = 0;
-    draw_quad(renderer, SCREEN_WIDTH/2 ,0,SCREEN_WIDTH/2 , SCREEN_WIDTH/2 ,SCREEN_HEIGHT ,SCREEN_WIDTH/2, Black);
+    //draw_quad(renderer, SCREEN_WIDTH/2 ,0,SCREEN_WIDTH/2 , SCREEN_WIDTH/2 ,SCREEN_HEIGHT ,SCREEN_WIDTH/2, Black);
     for(int i = 1+start_pos ; i < lines_drawn+start_pos ; i++){
 
         //while(lines[(i+skip) % total_lines])
         
         Line3D * curr_line = &lines[i % total_lines];
         Line3D * prev_line = &lines[(i-1) % total_lines];
-
-
 
 
         cam->x -= x;
@@ -479,8 +490,10 @@ void draw_scene(SDL_Renderer * renderer, Line3D * lines, Camera3D * cam, int lin
         SDL_Color road = (i/3)%2 ? Light_Road : Dark_Road;
         SDL_Color road_mid_line = (i/3)%4 < 2 ? Light_Road : Dark_Road;
 
+        //SDL_RenderClear(renderer);
         draw_quad(renderer, 0, prev_line->screenY, SCREEN_WIDTH, 0,curr_line->screenY, SCREEN_WIDTH, Water);
         draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width*1.2 , curr_line->screenX ,curr_line->screenY, curr_line->width*1.2 , rumble);
+    
         draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width , curr_line->screenX ,curr_line->screenY, curr_line->width , road);
 
         if((i/3)%6 < 3){
@@ -586,11 +599,11 @@ int WinMain(){
             }
             for(int i = 100 ; i < 300 ; i++){
                 //Line3DArray[i].curve = 0.5;
-                Line3DArray[i].curve = 0;
+                Line3DArray[i].curve = 0.2;
             }
             for(int i = 500 ; i < 1000 ; i++){
                 //Line3DArray[i].curve = 0.5;
-                Line3DArray[i].curve = -0.7;
+                Line3DArray[i].curve = -0.5;
             }
 
             for(int i = 1000 ; i < 1200 ; i++){
@@ -600,11 +613,11 @@ int WinMain(){
 
             for(int i = 1400 ; i < 1700 ; i++){
                 //Line3DArray[i].curve = 0.5;
-                Line3DArray[i].curve = -0.8;
+                Line3DArray[i].curve = -0.4;
             }
 
             //Create Camera
-            Camera3D * cam = new Camera3D(0,520,100,5,0,0);
+            Camera3D * cam = new Camera3D(0,1000,100,5,0,0);
 
             Car3D * AE86 = new Car3D(100,100,"test_race_img/AE86_cropped.png",1);
 
@@ -612,6 +625,8 @@ int WinMain(){
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
 
+
+            int k = 0;
             //While app is running
             while( !quit ){
                 //calculate time
@@ -626,14 +641,11 @@ int WinMain(){
                     else if(e.type == SDL_KEYDOWN){
                         SDL_PumpEvents();
                         if(keyarr[SDL_SCANCODE_UP])
-                            AE86->vz+=1;
+                            AE86->vz+=5;
                         if(keyarr[SDL_SCANCODE_DOWN])
-                            AE86->vz-=1;
+                            AE86->vz-=5;
                             AE86->vz = AE86->vz >= 0 ? AE86->vz : 0;
-                        if(keyarr[SDL_SCANCODE_LEFT])
-                            AE86->x-=0.2;
-                        if(keyarr[SDL_SCANCODE_RIGHT])
-                            AE86->x+=0.2;
+
 
                         if(keyarr[SDL_SCANCODE_Q]){
                             cam->D+=0.1;
@@ -657,17 +669,23 @@ int WinMain(){
                     else{
                         //do keyboard or mouse interaction event
                     }
+
                 }
-                
+                if(keyarr[SDL_SCANCODE_LEFT])
+                    AE86->x-=AE86->vz * 0.001;
+                if(keyarr[SDL_SCANCODE_RIGHT])
+                    AE86->x+=AE86->vz * 0.001;
+        
 
                 //Test
-                SDL_SetRenderDrawColor(renderer, 255,255,255,255);
+                SDL_SetRenderDrawColor(renderer, Blue_Sky.r,Blue_Sky.g,Blue_Sky.b,Blue_Sky.a);
+                SDL_RenderClear(renderer);
                 //SDL_RenderDrawLine(renderer, 0,0,100,100);
                 //draw_quad(renderer, 0,100,100,500,500,200,Light_Green);
                 
 
                 //Draw Scene
-                draw_scene(renderer, Line3DArray, cam ,1500,N);
+                draw_scene(renderer, Line3DArray, cam ,300,N);
 
                 //draw text
                 char speed_chars[10];
@@ -676,8 +694,9 @@ int WinMain(){
                 std::string stringValue = stream.str();
                 draw_words(renderer, stringValue );
 
-                //draw cars
+                //draw cars, main car
                 draw_cars(renderer, texture, cam , AE86);
+                AE86->x -= Line3DArray[(int) AE86->z/segement_length].curve * AE86->vz * 0.001;
                 
 
                 //Present

@@ -5,6 +5,7 @@
 #include <cmath>
 #include <algorithm>
 #include <vector>
+//#include <SDL_bgi.h>
 
 
 const int SCREEN_WIDTH = 1200;
@@ -182,11 +183,13 @@ void draw_scene(SDL_Renderer * renderer, Line3D * lines, Camera3D * cam, int lin
         draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width*1.2 , curr_line->screenX ,curr_line->screenY, curr_line->width*1.2 , rumble);
         draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width , curr_line->screenX ,curr_line->screenY, curr_line->width , road);
         //draw_quad(renderer, 50,50,50,200,200,100,Light_Road);
-        draw_quad(renderer, SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2, Blue_Sky); 
+        draw_quad(renderer, SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2, Blue_Sky);
+
     }
     cam->z+=cam->vz;
     //cam->x -= lines[1+start_pos].curve*25;
     //cam->x+=cam->vx;    
+    //circle(1,1,1);
 }
 
 void framerate_cap(Uint32 start, int fps){
