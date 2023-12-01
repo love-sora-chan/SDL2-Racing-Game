@@ -243,7 +243,7 @@ class Car3D{
     public:
         bool main_car;
 
-        double x, y ,z,  vz, vx, original_scale = 1;
+        double x, y ,z,  vz, vx, original_scale = 2;
         int picture_width, picture_height;
 
         std::string file_pos;
@@ -251,7 +251,7 @@ class Car3D{
         int screenX,screenY;
         double scale;
         Car3D(int picture_width, int picture_height, std::string file_pos , bool main_car){
-            x=0, y=0, z=1, vx = 0, vz = 0;
+            x=0, y=0, z=1650, vx = 0, vz = 0;
             this->picture_width=picture_width, this->picture_height = picture_height, this->file_pos = file_pos, this->main_car = main_car;
         }        
         Car3D(double x, double y, double z, double vx,double vz, double original_scale, int picture_width, int picture_height, std::string file_pos , bool main_car){
@@ -259,16 +259,17 @@ class Car3D{
         }
 
         void project(Camera3D * cam){
-            scale = cam->D/(z-cam->z);
+            
             x+=vx;
             z+=vz;
 
-            if(main_car==1){cam->vx=vx; cam->vz=vz;}
-
-            scale = 0.01;
+            if(main_car==1){cam->x+=vx; cam->z+=vz;}
+            scale = cam->D/(z-cam->z)*0.1;
+            //scale = 0.01;
             screenX = (int) ((1 + scale*( x - cam->x ))*SCREEN_WIDTH / 2);
-            //screenY = (int) ((1 - scale*( y - cam->y ))*SCREEN_HEIGHT / 2);
-            screenY = SCREEN_HEIGHT *4/5 ;
+            screenY = (int) ((1 - scale*( y - cam->y ))*SCREEN_HEIGHT / 2);
+            //screenY = SCREEN_HEIGHT *4/5 ;
+            //std::cout<<screenX<<' '<<scale*( y - cam->y )<<'\n';
         }
 };
 
@@ -293,14 +294,45 @@ class Line3D{
 
 class Map{
 public :
-    int Line_number;
-    std::pair<int,double> * nodes;
+    std::string name;
+    int Line_number, Node_number;
+    std::pair<std::pair<int,int>,double> * Nodes;
     Line3D * lines;
-    // Nodes consists <line number, curve>, meaning from last line number(default 0) to this 
-    Map(int Line_number , std::pair<int,double> * nodes ){
+    // Nodes consists <line number, curve>, meaning from last line number(default 0) to this line number, the curve would be <curve> 
+    Map(std::string name, int Line_number , int Node_number, std::pair<std::pair<int,int>,double> * Nodes ){
+        this->name = name ,this->Line_number = Line_number, this->Nodes = Nodes, this->Node_number = Node_number;
+        lines = new Line3D[Line_number];
 
+        for(int i = 0 ; i < Line_number ; i++){
+            lines[i].z = segement_length*i;
+        }
+
+        for(int i = 0 ; i < Node_number ; i++){
+            for(int j = Nodes[i].first.first ; j < Nodes[i].first.second ; j++){
+                lines[j].curve = Nodes[i].second;
+            }
+        }
     };
-    Map(){}
+
+    double get_curve(int line_position ){
+        if(line_position >= Line_number || line_position < 0){
+            std::cout<<"Error, invalid line position\n";
+            return 0;
+        }
+        else{
+            return lines[line_position].curve;
+        }
+    }
+
+
+    ~Map(){
+        delete [] Nodes;
+        delete Nodes;
+        delete [] lines;
+        delete lines;
+    }
+
+    
 
 };
 
@@ -453,16 +485,17 @@ void draw_quad(SDL_Renderer * renderer, int x1, int y1, int w1, int x2, int y2, 
     */
 }
 
-void draw_scene(SDL_Renderer * renderer, Line3D * lines, Camera3D * cam, int lines_drawn, int total_lines){
+void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, int lines_drawn){
     int start_pos = cam->z / segement_length;
+    int total_lines = map->Line_number;
     double x = 0, dx = 0;
     //draw_quad(renderer, SCREEN_WIDTH/2 ,0,SCREEN_WIDTH/2 , SCREEN_WIDTH/2 ,SCREEN_HEIGHT ,SCREEN_WIDTH/2, Black);
     for(int i = 1+start_pos ; i < lines_drawn+start_pos ; i++){
 
         //while(lines[(i+skip) % total_lines])
         
-        Line3D * curr_line = &lines[i % total_lines];
-        Line3D * prev_line = &lines[(i-1) % total_lines];
+        Line3D * curr_line = &map->lines[i % total_lines];
+        Line3D * prev_line = &map->lines[(i-1) % total_lines];
 
 
         cam->x -= x;
@@ -472,11 +505,11 @@ void draw_scene(SDL_Renderer * renderer, Line3D * lines, Camera3D * cam, int lin
 
         //Skip lines that have same y coordinate 
         int skip = 0;
-        Line3D * next_line = &lines[(i+1) % total_lines];
+        Line3D * next_line = &map->lines[(i+1) % total_lines];
         next_line->project(cam);
         while(curr_line->screenY==next_line->screenY && curr_line->screenX==next_line->screenX){
             skip++;
-            next_line = &lines[(i+skip+1) % total_lines];
+            next_line = &map->lines[(i+skip+1) % total_lines];
             cam->x -= x;
             next_line->project(cam);
             cam->x += x;
@@ -513,8 +546,8 @@ void draw_cars(SDL_Renderer * renderer, SDL_Texture * texture, Camera3D * cam, C
     texture = loadTexture(renderer, car->file_pos);
     car->project(cam);
     SDL_Rect CarViewport;
-    CarViewport.w = (int) car->picture_width*car->original_scale;
-    CarViewport.h = (int) car->picture_width*car->original_scale;
+    CarViewport.w = (int) car->picture_width*car->original_scale*car->scale*1500;
+    CarViewport.h = (int) car->picture_width*car->original_scale*car->scale*1500;
     CarViewport.x = car->screenX - CarViewport.w / 2;
     CarViewport.y = car->screenY - CarViewport.h / 2;
 
@@ -532,7 +565,7 @@ void draw_cars(SDL_Renderer * renderer, SDL_Texture * texture, Camera3D * cam, C
     SDL_RenderSetViewport( renderer, NULL );
 }
 
-void draw_words(SDL_Renderer * renderer, std::string ss){
+void draw_words(SDL_Renderer * renderer, std::string ss, int screenx, int screeny){
     /*
     SDL_Rect BottomRightViewport;
     BottomRightViewport.x = SCREEN_WIDTH *1 /2;
@@ -556,7 +589,8 @@ void draw_words(SDL_Renderer * renderer, std::string ss){
             printf( "Failed to render text texture!\n" );
         }
     }
-    gTextTexture.render(renderer, ( SCREEN_WIDTH * 9 / 10 - gTextTexture.getWidth()/ 2  ) , ( SCREEN_HEIGHT * 9 / 10 - gTextTexture.getHeight()/ 2  ) );
+    gTextTexture.render(renderer, ( screenx - gTextTexture.getWidth()/ 2  ) , ( screeny - gTextTexture.getHeight()/ 2  ) );
+    gTextTexture.free();
     //SDL_RenderSetViewport( renderer, NULL );
 
 }
@@ -568,10 +602,10 @@ void framerate_cap(Uint32 start, int fps){
     if( elapsed_time < ms_per_frame ){
         SDL_Delay( (int) (ms_per_frame - elapsed_time) );
     }
-    
+    /*
     if(cnt==10){std::cout<<elapsed_time<<' ';cnt=0;}
     else{cnt++;}
-    
+    */
 }
 
 int WinMain(){
@@ -589,35 +623,20 @@ int WinMain(){
             //Event Handler
             SDL_Event e;
 
-            //Create Lines
-            int N = 50000 ;
-            Line3D * Line3DArray = new Line3D[N];
-            for(int i = 0 ; i < N ; i++){
-                Line3D line;
-                Line3DArray[i] = line;
-                Line3DArray[i].z = segement_length * i;
-            }
-            for(int i = 100 ; i < 300 ; i++){
-                //Line3DArray[i].curve = 0.5;
-                Line3DArray[i].curve = 0.2;
-            }
-            for(int i = 500 ; i < 1000 ; i++){
-                //Line3DArray[i].curve = 0.5;
-                Line3DArray[i].curve = -0.5;
-            }
+            //Create Map
+            int Node_number = 5;
+            std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[5];
+            Nodes[0] = std::make_pair( std::make_pair(100,300) , 0.2 );
+            Nodes[1] = std::make_pair( std::make_pair(500,1000) , -0.5 );
+            Nodes[2] = std::make_pair( std::make_pair(1000,1200) , 1 );
+            Nodes[3] = std::make_pair( std::make_pair(1400,1700) , -0.4 );
+            Nodes[4] = std::make_pair( std::make_pair(1700,1800) , -1.2 );
 
-            for(int i = 1000 ; i < 1200 ; i++){
-                //Line3DArray[i].curve = 0.5;
-                Line3DArray[i].curve = 1;
-            }
+            Map * test_map = new Map("Test_Map",5000,5,Nodes);
 
-            for(int i = 1400 ; i < 1700 ; i++){
-                //Line3DArray[i].curve = 0.5;
-                Line3DArray[i].curve = -0.4;
-            }
 
             //Create Camera
-            Camera3D * cam = new Camera3D(0,1000,100,5,0,0);
+            Camera3D * cam = new Camera3D(0,1550,100,5,0,0);
 
             Car3D * AE86 = new Car3D(100,100,"test_race_img/AE86_cropped.png",1);
 
@@ -658,12 +677,12 @@ int WinMain(){
                         }
                         if(keyarr[SDL_SCANCODE_W]){
                             cam->y+=5;
-                            //std::cout<<cam->y<<'\n';
+                            std::cout<<cam->y<<'\n';
                         }
                             
                         if(keyarr[SDL_SCANCODE_S]){
                             cam->y-=5;
-                            //std::cout<<cam->y<<'\n';
+                            std::cout<<cam->y<<'\n';
                         }
                     }
                     else{
@@ -672,9 +691,12 @@ int WinMain(){
 
                 }
                 if(keyarr[SDL_SCANCODE_LEFT])
-                    AE86->x-=AE86->vz * 0.001;
+                    AE86->x-=AE86->vz * 0.04 ;
                 if(keyarr[SDL_SCANCODE_RIGHT])
-                    AE86->x+=AE86->vz * 0.001;
+                    AE86->x+=AE86->vz * 0.04 ;
+
+                AE86->x-=AE86->vz * 0.01 * test_map->get_curve((int) AE86->z / segement_length );
+                
         
 
                 //Test
@@ -685,18 +707,27 @@ int WinMain(){
                 
 
                 //Draw Scene
-                draw_scene(renderer, Line3DArray, cam ,300,N);
+                draw_scene(renderer, test_map, cam ,300);
 
-                //draw text
-                char speed_chars[10];
+                //draw speed
                 std::ostringstream stream;
                 stream << std::fixed << std::setprecision(2) << AE86->vz;
                 std::string stringValue = stream.str();
-                draw_words(renderer, stringValue );
+                draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*9/10);
+                stream.str("");
+                stream.clear();
 
+                //draw progress
+                stream << std::fixed << std::setprecision(2) << AE86->z/(test_map->Line_number*segement_length)*100<<'%';
+                stringValue = stream.str();
+                //std::cout<<stream.str()<<'\n';
+                draw_words(renderer, stringValue , SCREEN_WIDTH*1/10, SCREEN_HEIGHT*9/10);
+                stream.str("");
+                stream.clear();
+                
                 //draw cars, main car
                 draw_cars(renderer, texture, cam , AE86);
-                AE86->x -= Line3DArray[(int) AE86->z/segement_length].curve * AE86->vz * 0.001;
+                AE86->x -= test_map->lines[(int) AE86->z/segement_length].curve * AE86->vz * 0.001;
                 
 
                 //Present
@@ -708,7 +739,7 @@ int WinMain(){
 
                 
             }
-            delete [] Line3DArray;
+            delete test_map;
             delete cam;
             
         }
