@@ -1,7 +1,6 @@
 #include <SDL.h>
 #include <stdio.h>
 #include <iostream>
-#include <cstdlib>
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -105,10 +104,9 @@ int WinMain( int argc, char* args[] )
 					}
 					else if( e.button.button == SDL_BUTTON_LEFT){
 						buttons = SDL_GetMouseState(&mx,&my);
-						srand(rand());
-						int pix1 = rand()%256,pix2 = rand()%256,pix3 = rand()%256;
-						SetPixel(screen, mx, my, pix1 ,pix2,pix3 );
+						SetPixel(screen, mx, my, 255 ,255,255 );
 						
+						std::cout<<"left mouse clicked "<<mx<<' '<<my<<'\n';
 					}
 		
 				}

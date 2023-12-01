@@ -52,7 +52,7 @@ bool init()
 		}
 
 		//Create window
-		gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+		gWindow = SDL_CreateWindow( "TEST", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
 		if( gWindow == NULL )
 		{
 			printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
@@ -147,7 +147,7 @@ SDL_Texture* loadTexture( std::string path )
 	return newTexture;
 }
 
-int main( int argc, char* args[] )
+int WinMain( int argc, char* args[] )
 {
 	//Start up SDL and create window
 	if( !init() )
@@ -196,6 +196,7 @@ int main( int argc, char* args[] )
 				
 				//Render texture to screen
 				SDL_RenderCopy( gRenderer, gTexture, NULL, NULL );
+				SDL_RenderPresent(gRenderer);
 
 
 				//Top right viewport
@@ -208,6 +209,8 @@ int main( int argc, char* args[] )
 				
 				//Render texture to screen
 				SDL_RenderCopy( gRenderer, gTexture, NULL, NULL );
+
+				SDL_RenderClear(gRenderer);
 
 
 				//Bottom viewport
