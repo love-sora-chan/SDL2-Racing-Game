@@ -1,7 +1,6 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
-#include <SDL_mixer.h>
 #include <iostream>
 #include <string>
 
@@ -14,7 +13,7 @@ SDL_Color White= {.r = 255, .g = 255, .b = 255, .a = SDL_ALPHA_OPAQUE};
 
 enum current_page{
 	Home_page = 0,
-	Map_Page ,
+	Map_Page = 1,
 	Record_Page,
 };
 current_page STATUS = Home_page;
@@ -39,18 +38,6 @@ void InitializeSDL(){
 	if( TTF_Init() == -1 )
 	{
 		printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
-	}
-
-	//Initialize SDL_mixer
-	int mixFlags = MIX_INIT_FLAC | MIX_INIT_MOD | MIX_INIT_MP3 | MIX_INIT_OGG | MIX_INIT_MID | MIX_INIT_OPUS | MIX_INIT_FLAC;
-	if( !( Mix_Init( mixFlags ) & mixFlags ))
-	{
-		printf("SDL_mix could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
-	}
-	//open audio devices
-	if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
-	{
-	    printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
 	}
 	
 	
@@ -256,7 +243,8 @@ class Record{
 		//show all recorded records
 		void show(Record &rec,SDL_Renderer* REND);
 
-		
+		//show on screen
+		void ShowOnScr(Record &rec,SDL_Renderer* REND);
 		
 		//add new record if better time
 		//void setRecord(Record &rec,float timing);
@@ -273,7 +261,6 @@ void Record::RecordReset(Record &rec){
 }
 
 void Record::show(Record &rec,SDL_Renderer* REND){
-	SDL_RenderClear(REND);
 	Font = TTF_OpenFont("test_ttf/SegUIVar.ttf",14);
 	for(int i=0;i<5;i++){
 		rec.ranking_list->loadFromRenderedText("RANK"+std::to_string(rec.ranking[i]),White,REND,Font);
@@ -285,6 +272,17 @@ void Record::show(Record &rec,SDL_Renderer* REND){
 	SDL_RenderPresent(REND);
 }
 
+void Record::ShowOnScr(Record &rec,SDL_Renderer* REND){
+	//SDL_FlushEvents(SDL_FIRSTEVENT,SDL_LASTEVENT);									
+	SDL_RenderClear(REND);										
+	LTexture load_pic;
+	load_pic.loadFromFile("testimage/loading.png",REND);
+	load_pic.render(SCREEN_WIDTH/5*2,SCREEN_HEIGHT/2,SCREEN_WIDTH/5,SCREEN_HEIGHT/4,REND);
+	SDL_RenderPresent(REND);										
+	SDL_Delay(1000);
+	SDL_RenderClear(REND);
+	rec.show(rec,REND);
+}
 
 class MENU{
 	private:
@@ -318,10 +316,9 @@ void MENU::Initialize(MENU &m,SDL_Renderer* REND){
 }
 
 void MENU::show(MENU &m,SDL_Renderer* REND){
-	SDL_RenderClear(REND);
 	m.background.render(0,0,SCREEN_WIDTH,SCREEN_HEIGHT,REND);
 	m.start_button.render(SCREEN_WIDTH*0.375,SCREEN_HEIGHT*0.45,SCREEN_WIDTH/4,SCREEN_HEIGHT/10,REND);
-	m.record_button.render(SCREEN_WIDTH*0.375,SCREEN_HEIGHT*0.60,SCREEN_WIDTH/4,SCREEN_HEIGHT/10,REND);
+	m.record_button.render(SCREEN_WIDTH*0.375,SCREEN_HEIGHT*0.70,SCREEN_WIDTH/4,SCREEN_HEIGHT/10,REND);
 	SDL_RenderPresent(REND);
 }
 
@@ -375,11 +372,7 @@ void MENU::vanish(MENU &m,SDL_Renderer* REND,int spd = 5){
 
 void Transition(SDL_Renderer* REND){
 	SDL_RenderClear(REND);
-	LTexture load_pic;
-	load_pic.loadFromFile("testimage/loading.png",REND);
-	load_pic.render(SCREEN_WIDTH/5*2,SCREEN_HEIGHT/2,SCREEN_WIDTH/5,SCREEN_HEIGHT/4,REND);
-	SDL_RenderPresent(REND);										
-	SDL_Delay(1000);
+	SDL_RenderPresent(REND);
 }
 
 
@@ -448,7 +441,7 @@ int WinMain(int argc,char *argv[]){
 										if(main_menu.opt==2){
 											STATUS = Record_Page;
 											Transition(gRenderer);
-											rec.show(rec,gRenderer);											
+											rec.ShowOnScr(rec,gRenderer);											
 										}
 										break;
 									}
@@ -463,7 +456,7 @@ int WinMain(int argc,char *argv[]){
 									Transition(gRenderer);
 									main_menu.Initialize(main_menu,gRenderer);
 									main_menu.choosing(main_menu.opt,main_menu,gRenderer);
-									main_menu.appear(main_menu,gRenderer);
+									main_menu.show(main_menu,gRenderer);
 									break;								
 								}									
 							}
