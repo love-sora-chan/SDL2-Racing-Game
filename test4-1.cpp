@@ -37,6 +37,26 @@ SDL_Color Light_Road= {.r = 105, .g = 105, .b = 105, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Blue_Sky= {.r = 53, .g = 81, .b = 92, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Water= {.r = 15, .g = 94, .b = 156, .a = SDL_ALPHA_OPAQUE};
 
+const int Num_Of_Cars = 2;
+enum Car_Type {
+    AE86, R7X
+};
+
+std::string Car_File_locations[Num_Of_Cars] = {"test_race_img/AE86_cropped.png","test_race_img/R7X_cropped.png"};
+SDL_Texture ** Car_Textures = new SDL_Texture*[Num_Of_Cars];
+
+const int Num_Of_Obstacles = 2;
+enum Obstacle_Type {
+    cone, rock
+};
+std::string Obstacle_File_locations[Num_Of_Obstacles] = {"test_race_img/cone.png","test_race_img/rock_cropped.png"};
+SDL_Texture ** Obstacle_Textures = new SDL_Texture*[Num_Of_Obstacles];
+
+/*
+std::string Finish_Line_File_locations[1] = {"test_race_img/cone.png","test_race_img/rock_cropped.png"};
+SDL_Texture ** Obstacle_Textures = new SDL_Texture*[Num_Of_Obstacles];
+*/
+
 //Texture wrapper class
 class LTexture
 {
@@ -268,9 +288,7 @@ class Camera3D{
         }
 };
 
-enum Car_Type {
-    AE86, R7X
-};
+
 
 class Car3D{
     public:
@@ -332,17 +350,14 @@ class Car3D{
                 case AE86:
                 picture_width = 100;
                 picture_height = 100;
-                file_pos = "test_race_img/AE86_cropped.png";
-                car_texture = loadTexture(renderer, file_pos);
                 break;
 
                 case R7X:
                 picture_width = 100;
-                picture_height = 100;
-                file_pos = "test_race_img/R7X_cropped.png";
-                car_texture = loadTexture(renderer, file_pos);
+                picture_height = 100;   
                 break;
             }
+            car_texture = Car_Textures[(int) type];
         }
 
         void project(Camera3D * cam){
@@ -379,8 +394,10 @@ class Line3D{
         }
 };
 
-enum Obstacle_Type {
-    cone, rock
+class Finish_Line3D{
+    public:
+        double x, y ,z,  vz, vx, original_scale = 2;
+        int picture_width, picture_height;
 };
 
 class Obstacle3D{
@@ -412,11 +429,10 @@ public :
     void resolve_file_attributes(){
         switch(type){
             case cone: 
-                file_pos = "test_race_img/cone.png";
                 picture_width = 100, picture_height = 128;
-                obstacle_texture = loadTexture(renderer, file_pos);
                 break;
         }
+        obstacle_texture = Obstacle_Textures[(int) type];
     }    
 
     void project(Camera3D * cam){
@@ -435,6 +451,9 @@ public :
 
 };
 
+
+
+
 struct Obstacle_build{
     double x, y, segment_number_position;
     Obstacle_Type type;
@@ -445,15 +464,15 @@ struct Obstacle_build{
 class Map{
 public :
     std::string name;
-    int Line_number, Node_number, Obstacle_number;
+    int Line_number, Node_number, Obstacle_number, Finish_Line_segement_number;
     std::pair<std::pair<int,int>,double> * Nodes;
     Obstacle_build * Obstacle_arr;
     Line3D * lines;
     Obstacle3D * Obstacles;
     int * Obstacles_Location;
     // Nodes consists <line number, curve>, meaning from last line number(default 0) to this line number, the curve would be <curve> 
-    Map(std::string name, int Line_number , int Node_number, std::pair<std::pair<int,int>,double> * Nodes , int Obstacle_number , Obstacle_build * Obstacle_arr ){
-        this->name = name ,this->Line_number = Line_number, this->Nodes = Nodes, this->Node_number = Node_number, this->Obstacle_number = Obstacle_number, this->Obstacle_arr = Obstacle_arr;
+    Map(std::string name, int Line_number , int Node_number, std::pair<std::pair<int,int>,double> * Nodes , int Obstacle_number , Obstacle_build * Obstacle_arr , int Finish_Line_segement_number){
+        this->name = name ,this->Line_number = Line_number, this->Nodes = Nodes, this->Node_number = Node_number, this->Obstacle_number = Obstacle_number, this->Obstacle_arr = Obstacle_arr, this->Finish_Line_segement_number = Finish_Line_segement_number;
         lines = new Line3D[Line_number];
         Obstacles = new Obstacle3D[Obstacle_number];
         Obstacles_Location = new int[Line_number];
@@ -551,6 +570,8 @@ bool init(){
 
 bool loadmedia(){
     bool success = 1;
+    for( int i = 0 ; i < Num_Of_Cars ; i++){Car_Textures[i] = loadTexture(renderer, Car_File_locations[i] );}
+    for( int i = 0 ; i < Num_Of_Obstacles ; i++){Obstacle_Textures[i] = loadTexture(renderer, Obstacle_File_locations[i] );}
     return success; 
 }
 
@@ -704,6 +725,9 @@ void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, int lines_dr
         int skip = 0;
         Line3D * next_line = &map->lines[(i+1) % total_lines];
         next_line->project(cam);
+
+
+
         while(curr_line->screenY==next_line->screenY && curr_line->screenX==next_line->screenX){
             skip++;
             next_line = &map->lines[(i+skip+1) % total_lines];
@@ -728,7 +752,17 @@ void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, int lines_dr
         //draw road segment line
         if((i/3)%6 < 3){
             draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width/32 , curr_line->screenX ,curr_line->screenY, curr_line->width/32 , White);
-        }        
+        }          
+        //draw finish line
+        
+        if(i - map->Finish_Line_segement_number < 8 && i - map->Finish_Line_segement_number > -8 ){
+            SDL_Color First = ( i%4 < 2 ? White : Black );
+            SDL_Color Second = ( i%4 >= 2 ? White : Black );
+            draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width * 4 / 4 , curr_line->screenX ,curr_line->screenY, curr_line->width * 4 / 4 , First);
+            draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width * 3 / 4 , curr_line->screenX ,curr_line->screenY, curr_line->width * 3 / 4 , Second);
+            draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width * 2 / 4 , curr_line->screenX ,curr_line->screenY, curr_line->width * 2 / 4 , First);
+            draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width * 1 / 4 , curr_line->screenX ,curr_line->screenY, curr_line->width * 1 / 4 , Second);
+        }
     } 
 
 
@@ -810,25 +844,25 @@ int WinMain(){
             Nodes[10] = std::make_pair( std::make_pair(4000,6000) , -1.2 );
 
             //Create Obstacle
-            int Obstacle_number = 100;
+            int Obstacle_number = 4000;
             srand (time(NULL));
             Obstacle_build * obstacle_details = new Obstacle_build[Obstacle_number];
             for(int i = 0 ; i < Obstacle_number ; i++){
-                obstacle_details[i].type = cone;
+                obstacle_details[i].type = (i%2==0 ? cone : rock) ;
                 obstacle_details[i].x = ( (double) rand() / RAND_MAX * 2 - 1) * road_width ;
                 //std::cout<<obstacle_details[i].x<<' ';
                 obstacle_details[i].y = 0;
-                obstacle_details[i].segment_number_position = i*100 ;
+                obstacle_details[i].segment_number_position = i*25 ;
             }
             
 
-            Map * test_map = new Map("Test_Map",10000,Node_number,Nodes, Obstacle_number, obstacle_details);
+            Map * test_map = new Map("Test_Map",110000,Node_number,Nodes, Obstacle_number, obstacle_details,300);
             
 
             //Create Camera
             Camera3D * cam = new Camera3D(0,1550,100,5,0,0);
 
-            Car3D * car_main = new Car3D(R7X,true);
+            Car3D * car_main = new Car3D(AE86,true);
 
             //Clear renderer
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -881,7 +915,7 @@ int WinMain(){
                 if(keyarr[SDL_SCANCODE_UP])
                     car_main->increment_vz( 5 );
                 if(keyarr[SDL_SCANCODE_DOWN])
-                    car_main->increment_vz( -5 );
+                    car_main->increment_vz( -25 );
 
 
                 car_main->increment_x( -1 * car_main->get_speed_vz() * 0.01 * test_map->get_curve((int) car_main->get_z() / segement_length ) );
@@ -901,7 +935,7 @@ int WinMain(){
 
                 //draw speed
                 std::ostringstream stream;
-                stream << std::fixed << std::setprecision(2) << car_main->vz;
+                stream << std::fixed << std::setprecision(2) << car_main->vz / 10;
                 std::string stringValue = stream.str();
                 draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*9/10);
                 stream.str("");
