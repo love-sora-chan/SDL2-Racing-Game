@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iomanip>
 #include <utility>  
+#include <cstdlib>
 
 
 const int SCREEN_WIDTH = 1280;
@@ -15,7 +16,7 @@ const int SCREEN_HEIGHT = 720;
 const Uint8* keyarr = SDL_GetKeyboardState(NULL);
 
 int segement_length = 1600;
-int road_width = 1200;
+int road_width = 2400;
 
 SDL_Window * window = NULL;
 SDL_Surface * surface = NULL;
@@ -23,6 +24,7 @@ SDL_Texture * texture = NULL;
 SDL_Renderer * renderer = NULL;
 //Globally used font
 TTF_Font* gFont = NULL;
+
 
 
 
@@ -228,6 +230,33 @@ int LTexture::getHeight()
 	return mHeight;
 }
 
+SDL_Texture* loadTexture( SDL_Renderer * renderer, std::string path )
+{
+	//The final texture
+	SDL_Texture* newTexture = NULL;
+
+	//Load image at specified path
+	SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
+	if( loadedSurface == NULL )
+	{
+		printf( "Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError() );
+	}
+	else
+	{
+		//Create texture from surface pixels
+        newTexture = SDL_CreateTextureFromSurface( renderer, loadedSurface );
+		if( newTexture == NULL )
+		{
+			printf( "Unable to create texture from %s! SDL Error: %s\n", path.c_str(), SDL_GetError() );
+		}
+
+		//Get rid of old loaded surface
+		SDL_FreeSurface( loadedSurface );
+	}
+
+	return newTexture;
+}
+
 class Camera3D{
     public:
         double x, y ,z, D, vz, vx;
@@ -239,23 +268,81 @@ class Camera3D{
         }
 };
 
+enum Car_Type {
+    AE86, R7X
+};
+
 class Car3D{
     public:
         bool main_car;
 
         double x, y ,z,  vz, vx, original_scale = 2;
         int picture_width, picture_height;
-
+        Car_Type type;
         std::string file_pos;
 
         int screenX,screenY;
         double scale;
-        Car3D(int picture_width, int picture_height, std::string file_pos , bool main_car){
+
+        SDL_Texture * car_texture;
+
+
+        Car3D(Car_Type type , bool main_car){
             x=0, y=0, z=1650, vx = 0, vz = 0;
-            this->picture_width=picture_width, this->picture_height = picture_height, this->file_pos = file_pos, this->main_car = main_car;
+            this->type = type, this->main_car = main_car;
+            resolve_file_attributes();
         }        
-        Car3D(double x, double y, double z, double vx,double vz, double original_scale, int picture_width, int picture_height, std::string file_pos , bool main_car){
-            this->x=x, this->y=y, this->z=z,  this->vx=vx, this->vz=vz, this->original_scale = original_scale, this->picture_width=picture_width, this->picture_height = picture_height, this->file_pos = file_pos, this->main_car = main_car;
+        Car3D(double x, double y, double z, double vx,double vz, Car_Type type,  double original_scale,  bool main_car){
+            this->x=x, this->y=y, this->z=z,  this->vx=vx, this->vz=vz, this->type = type,this->original_scale = original_scale, this->main_car = main_car;
+            resolve_file_attributes();
+        }
+
+        void change_type( Car_Type type){
+            this->type = type;
+            resolve_file_attributes();
+        }
+
+
+        double get_speed_vx(){return vx;}
+        double increment_vx(double delta_vx){
+            vx += delta_vx;
+            return vx;
+        }
+        double get_x(){return x;}
+        double increment_x(double delta_x){
+            x += delta_x;
+            return x;
+        }
+
+        double get_speed_vz(){return vz;}
+        double increment_vz(double delta_vz){
+            vz += delta_vz;
+            vz = vz>0 ? vz : 0;
+            return vz;
+        }
+
+        double get_z(){return z;}
+        double increment_z(double delta_z){
+            z += delta_z;
+            return z;
+        }
+
+        void resolve_file_attributes(){
+            switch(type){
+                case AE86:
+                picture_width = 100;
+                picture_height = 100;
+                file_pos = "test_race_img/AE86_cropped.png";
+                car_texture = loadTexture(renderer, file_pos);
+                break;
+
+                case R7X:
+                picture_width = 100;
+                picture_height = 100;
+                file_pos = "test_race_img/R7X_cropped.png";
+                car_texture = loadTexture(renderer, file_pos);
+                break;
+            }
         }
 
         void project(Camera3D * cam){
@@ -292,25 +379,102 @@ class Line3D{
         }
 };
 
+enum Obstacle_Type {
+    cone, rock
+};
+
+class Obstacle3D{
+public :
+    double x, y, z, scale, original_scale = 2;//cooridinate in 3D space
+    int segment_number_position;
+    int screenX, screenY;//cooridinate on screen;
+    int picture_width, picture_height;
+    Obstacle_Type type = cone;
+    std::string file_pos;
+    SDL_Texture * obstacle_texture;
+
+    Obstacle3D(){
+        x=0,y=0, segment_number_position=0;
+        type = cone;
+        resolve_file_attributes();
+    }
+    Obstacle3D(int x, int y, int segment_number_position, Obstacle_Type type){
+        this->x=x, this->y=y, this->segment_number_position=segment_number_position, this->type = type;
+        z = segment_number_position * segement_length;
+        resolve_file_attributes();
+    }
+
+    void change_type( Obstacle_Type type){
+        this->type = type;
+        resolve_file_attributes();
+    }
+
+    void resolve_file_attributes(){
+        switch(type){
+            case cone: 
+                file_pos = "test_race_img/cone.png";
+                picture_width = 100, picture_height = 128;
+                obstacle_texture = loadTexture(renderer, file_pos);
+                break;
+        }
+    }    
+
+    void project(Camera3D * cam){
+        scale = cam->D/(segment_number_position*segement_length - cam->z);
+        //scale = 1;
+        screenX = (int) ((1 + scale*( x - cam->x ))*SCREEN_WIDTH / 2);
+        screenY = (int) ((1 - scale*( y - cam->y ))*SCREEN_HEIGHT / 2);
+        //std::cout<<y - cam->y<<'\n';
+    }
+
+    double get_x(){return x;}
+    double get_y(){return y;}
+    double get_z(){return segment_number_position*segement_length;}
+    int get_segment_number_position(){return segment_number_position;}
+
+
+};
+
+struct Obstacle_build{
+    double x, y, segment_number_position;
+    Obstacle_Type type;
+};
+
+
+
 class Map{
 public :
     std::string name;
-    int Line_number, Node_number;
+    int Line_number, Node_number, Obstacle_number;
     std::pair<std::pair<int,int>,double> * Nodes;
+    Obstacle_build * Obstacle_arr;
     Line3D * lines;
+    Obstacle3D * Obstacles;
+    int * Obstacles_Location;
     // Nodes consists <line number, curve>, meaning from last line number(default 0) to this line number, the curve would be <curve> 
-    Map(std::string name, int Line_number , int Node_number, std::pair<std::pair<int,int>,double> * Nodes ){
-        this->name = name ,this->Line_number = Line_number, this->Nodes = Nodes, this->Node_number = Node_number;
+    Map(std::string name, int Line_number , int Node_number, std::pair<std::pair<int,int>,double> * Nodes , int Obstacle_number , Obstacle_build * Obstacle_arr ){
+        this->name = name ,this->Line_number = Line_number, this->Nodes = Nodes, this->Node_number = Node_number, this->Obstacle_number = Obstacle_number, this->Obstacle_arr = Obstacle_arr;
         lines = new Line3D[Line_number];
+        Obstacles = new Obstacle3D[Obstacle_number];
+        Obstacles_Location = new int[Line_number];
 
         for(int i = 0 ; i < Line_number ; i++){
             lines[i].z = segement_length*i;
+            Obstacles_Location[i] = -1;
         }
 
         for(int i = 0 ; i < Node_number ; i++){
             for(int j = Nodes[i].first.first ; j < Nodes[i].first.second ; j++){
                 lines[j].curve = Nodes[i].second;
             }
+        }
+
+        for(int i = 0 ; i < Obstacle_number ; i++){
+            Obstacles[i].x = Obstacle_arr[i].x;
+            Obstacles[i].y = Obstacle_arr[i].y;
+            Obstacles[i].segment_number_position = Obstacle_arr[i].segment_number_position;
+            Obstacles_Location[ Obstacles[i].segment_number_position ] = i;
+            Obstacles[i].change_type( Obstacle_arr[i].type );
         }
     };
 
@@ -324,44 +488,26 @@ public :
         }
     }
 
+    std::string get_name_of_map(){return name;}
+    int get_obstacle_number(){return Obstacle_number;}
+    Obstacle3D * get_Obstacles(){return Obstacles;}
+    int * get_obstacles_location(){return Obstacles_Location;}
+
 
     ~Map(){
         delete [] Nodes;
         delete Nodes;
         delete [] lines;
         delete lines;
+        delete [] Obstacles;
+        delete Obstacles;
+        delete [] Obstacles_Location;
+        delete Obstacles_Location;
     }
 
     
 
 };
-
-SDL_Texture* loadTexture( SDL_Renderer * renderer, std::string path )
-{
-	//The final texture
-	SDL_Texture* newTexture = NULL;
-
-	//Load image at specified path
-	SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
-	if( loadedSurface == NULL )
-	{
-		printf( "Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError() );
-	}
-	else
-	{
-		//Create texture from surface pixels
-        newTexture = SDL_CreateTextureFromSurface( renderer, loadedSurface );
-		if( newTexture == NULL )
-		{
-			printf( "Unable to create texture from %s! SDL Error: %s\n", path.c_str(), SDL_GetError() );
-		}
-
-		//Get rid of old loaded surface
-		SDL_FreeSurface( loadedSurface );
-	}
-
-	return newTexture;
-}
 
 
 bool init(){
@@ -422,7 +568,7 @@ void close(){
 
 //(x1,y1)corresponds to the coordinate of the line center on screen, w1 is the width of line
 void draw_quad(SDL_Renderer * renderer, int x1, int y1, int w1, int x2, int y2, int w2, SDL_Color color){
-    if(0){
+    if(y1==y2){
         SDL_SetRenderDrawColor(renderer, color.r, color.g,color.b,color.a);
         SDL_RenderDrawLine(renderer, x1,y1,x2,y2);
     }
@@ -450,100 +596,10 @@ void draw_quad(SDL_Renderer * renderer, int x1, int y1, int w1, int x2, int y2, 
         };
         SDL_RenderGeometry(renderer, NULL,verts2.data(), verts2.size(), NULL,0 );   
     }
-
-
-
-/*
-    std::vector< SDL_Vertex > verts =
-    {
-        { SDL_FPoint{ 100, 100 }, SDL_Color{ 255, 255, 255, 255 }, SDL_FPoint{ 0 }, },
-        { SDL_FPoint{ 450, 450 }, SDL_Color{ 255, 255, 255, 255 }, SDL_FPoint{ 0 }, },
-        { SDL_FPoint{ 300,  450}, SDL_Color{ 255, 255, 255, 255 }, SDL_FPoint{ 0 }, },
-        { SDL_FPoint{ 150, 150 }, SDL_Color{ 255, 255, 255, 255 }, SDL_FPoint{ 0 }, },
-    };
-    SDL_RenderGeometry(renderer, NULL,verts.data(), verts.size(), NULL,0 ); 
-*/
-    /*
-    if(y1>y2){
-        std::swap(y1,y2);
-        std::swap(x1,x2);
-        std::swap(w1,w2);
-    }
-
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-
-    if(y1==y2){
-        //SDL_RenderDrawLine(renderer, x1 , y1 , x2, y2 );
-    }
-    else{
-        for(int y = y1 ; y <= y2 ; y++){
-            int w = w1 + (w2 - w1) * (y - y1) / (y2 - y1) ;
-            int xmid = x1 + (x2 - x1) * (y - y1) / (y2 - y1);
-            SDL_RenderDrawLine(renderer, xmid - w , y, xmid + w, y);
-        }        
-    }
-    */
 }
 
-void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, int lines_drawn){
-    int start_pos = cam->z / segement_length;
-    int total_lines = map->Line_number;
-    double x = 0, dx = 0;
-    //draw_quad(renderer, SCREEN_WIDTH/2 ,0,SCREEN_WIDTH/2 , SCREEN_WIDTH/2 ,SCREEN_HEIGHT ,SCREEN_WIDTH/2, Black);
-    for(int i = 1+start_pos ; i < lines_drawn+start_pos ; i++){
 
-        //while(lines[(i+skip) % total_lines])
-        
-        Line3D * curr_line = &map->lines[i % total_lines];
-        Line3D * prev_line = &map->lines[(i-1) % total_lines];
-
-
-        cam->x -= x;
-        curr_line->project(cam);
-        cam->x += x;
-        x+=dx; dx+=curr_line->curve;
-
-        //Skip lines that have same y coordinate 
-        int skip = 0;
-        Line3D * next_line = &map->lines[(i+1) % total_lines];
-        next_line->project(cam);
-        while(curr_line->screenY==next_line->screenY && curr_line->screenX==next_line->screenX){
-            skip++;
-            next_line = &map->lines[(i+skip+1) % total_lines];
-            cam->x -= x;
-            next_line->project(cam);
-            cam->x += x;
-            x+=dx; dx+=next_line->curve;
-        }
-        i+=skip;
-
-
-        SDL_Color grass = (i/3)%2 ? Light_Green : Dark_Green;
-        SDL_Color rumble = (i/3)%2 ? White : Black;
-        SDL_Color road = (i/3)%2 ? Light_Road : Dark_Road;
-        SDL_Color road_mid_line = (i/3)%4 < 2 ? Light_Road : Dark_Road;
-
-        //SDL_RenderClear(renderer);
-        draw_quad(renderer, 0, prev_line->screenY, SCREEN_WIDTH, 0,curr_line->screenY, SCREEN_WIDTH, Water);
-        draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width*1.2 , curr_line->screenX ,curr_line->screenY, curr_line->width*1.2 , rumble);
-    
-        draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width , curr_line->screenX ,curr_line->screenY, curr_line->width , road);
-
-        if((i/3)%6 < 3){
-            draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width/32 , curr_line->screenX ,curr_line->screenY, curr_line->width/32 , White);
-        }
-        //draw_quad(renderer, 50,50,50,200,200,100,Light_Road);
-        
-        //if(i>start_pos+280){std::cout<<curr_line->width<<' '<<prev_line->width<<'\n';}
-    }
-    draw_quad(renderer, SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2, Blue_Sky); 
-    cam->z+=cam->vz;
-    //cam->x -= lines[1+start_pos].curve*25;
-    //cam->x+=cam->vx;    
-}
-
-void draw_cars(SDL_Renderer * renderer, SDL_Texture * texture, Camera3D * cam, Car3D * car){
-    texture = loadTexture(renderer, car->file_pos);
+void draw_cars(SDL_Renderer * renderer,  Camera3D * cam, Car3D * car){
     car->project(cam);
     SDL_Rect CarViewport;
     CarViewport.w = (int) car->picture_width*car->original_scale*car->scale*1500;
@@ -553,16 +609,43 @@ void draw_cars(SDL_Renderer * renderer, SDL_Texture * texture, Camera3D * cam, C
 
     //std::cout<<CarViewport.w<<' '<<CarViewport.h<<' '<<CarViewport.x<<' '<<CarViewport.y<<'\n';
 
-    /*CarViewport.w = (int) 250;
-    CarViewport.h = (int) 250;
-    CarViewport.x = 350;
-    CarViewport.y = 350;*/
-
     SDL_RenderSetViewport( renderer, &CarViewport );
     
     //Render texture to screen
-    SDL_RenderCopy( renderer, texture, NULL, NULL );
+    SDL_RenderCopy( renderer, car->car_texture, NULL, NULL );
     SDL_RenderSetViewport( renderer, NULL );
+}
+
+void draw_obstacle(SDL_Renderer * renderer, Obstacle3D * obstacle ){
+    SDL_Rect ObstacleViewport;
+    ObstacleViewport.w = (int) obstacle->picture_width * obstacle->original_scale * obstacle->scale * 1500;
+    ObstacleViewport.h = (int) obstacle->picture_height * obstacle->original_scale * obstacle->scale * 1500;
+    ObstacleViewport.x = obstacle->screenX - ObstacleViewport.w / 2 ;
+    ObstacleViewport.y = obstacle->screenY - ObstacleViewport.h / 2;
+
+    //std::cout<<obstacle->segment_number_position<<' '<<ObstacleViewport.w<<' '<<ObstacleViewport.h<<' '<<ObstacleViewport.x<<' '<<ObstacleViewport.y<<'\n';
+
+    SDL_RenderSetViewport( renderer, &ObstacleViewport );
+    SDL_RenderCopy( renderer, obstacle->obstacle_texture, NULL, NULL );     
+    SDL_RenderSetViewport( renderer, NULL );   
+}
+
+void Car_Obstacle_Collision(Car3D * car, Map * map, int detect_segment_range){
+
+    double distance_x = 300, distance_z = 1000, shift_z = -10 * segement_length ; // somehow the z coordinate of obstacle is delayed 10 segment_length
+    int start_pos = car->get_z()/segement_length;
+    int * obstacles_location = map->get_obstacles_location();
+    for(int i = start_pos ; i < start_pos + detect_segment_range ; i++){
+        if(obstacles_location[i% map->Line_number] != -1){
+            //std::cout<<car->get_x() - map->Obstacles[ obstacles_location[i] ].get_x()<<' '<<car->get_z() - map->Obstacles[ obstacles_location[i] ].get_z()<<'\n';
+            //std::cout<<car->get_z()<<' ';
+            if(car->get_x() - map->Obstacles[ obstacles_location[i] ].get_x() < distance_x && car->get_x() - map->Obstacles[ obstacles_location[i% map->Line_number] ].get_x() > -1 * distance_x && car->get_z() - map->Obstacles[ obstacles_location[i% map->Line_number] ].get_z() < distance_z + shift_z  && car->get_z() - map->Obstacles[ obstacles_location[i% map->Line_number] ].get_z() > -1 * distance_z + shift_z ){
+                //std::cout<<"in range"<<'\n';
+                car->increment_vz( -1 * car->get_speed_vz() );
+            }             
+        }
+    }
+
 }
 
 void draw_words(SDL_Renderer * renderer, std::string ss, int screenx, int screeny){
@@ -595,6 +678,94 @@ void draw_words(SDL_Renderer * renderer, std::string ss, int screenx, int screen
 
 }
 
+void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, int lines_drawn){
+    int start_pos = cam->z / segement_length;
+    int total_lines = map->Line_number;
+    double x = 0, dx = 0;
+
+    Obstacle3D * Obstacles = map->Obstacles;
+    int * Obstacles_Location = map->Obstacles_Location;
+    Obstacle3D * curr_obstacle = NULL;
+    SDL_Rect ObstacleViewport;
+
+    //draw road
+    for(int i = 1+start_pos ; i < lines_drawn+start_pos ; i++){
+        
+        Line3D * curr_line = &map->lines[i % total_lines];
+        Line3D * prev_line = &map->lines[(i-1) % total_lines];
+
+        //camera projection and shift
+        cam->x -= x;
+        curr_line->project(cam);
+        cam->x += x;
+        x+=dx; dx+=curr_line->curve;
+
+        //Skip lines that have same y coordinate 
+        int skip = 0;
+        Line3D * next_line = &map->lines[(i+1) % total_lines];
+        next_line->project(cam);
+        while(curr_line->screenY==next_line->screenY && curr_line->screenX==next_line->screenX){
+            skip++;
+            next_line = &map->lines[(i+skip+1) % total_lines];
+            cam->x -= x;
+            next_line->project(cam);
+            cam->x += x;
+            x+=dx; dx+=next_line->curve;
+        }
+        i+=skip;
+
+        //select colors for drawing road
+        SDL_Color grass = (i/3)%2 ? Light_Green : Dark_Green;
+        SDL_Color rumble = (i/3)%2 ? White : Black;
+        SDL_Color road = (i/3)%2 ? Light_Road : Dark_Road;
+        SDL_Color road_mid_line = (i/3)%4 < 2 ? Light_Road : Dark_Road;
+
+        //SDL_RenderClear(renderer);
+        draw_quad(renderer, 0, prev_line->screenY, SCREEN_WIDTH, 0,curr_line->screenY, SCREEN_WIDTH, Water);
+        draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width*1.2 , curr_line->screenX ,curr_line->screenY, curr_line->width*1.2 , rumble);
+    
+        draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width , curr_line->screenX ,curr_line->screenY, curr_line->width , road);
+        //draw road segment line
+        if((i/3)%6 < 3){
+            draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width/32 , curr_line->screenX ,curr_line->screenY, curr_line->width/32 , White);
+        }        
+    } 
+
+
+    //draw obstacles
+    x = 0, dx = 0;
+    for(int i = 1+start_pos ; i < lines_drawn+start_pos ; i++){
+        Line3D * curr_line = &map->lines[i % total_lines];
+        Line3D * prev_line = &map->lines[(i-1) % total_lines];
+
+        //camera projection and shift
+        cam->x -= x;
+        curr_line->project(cam);
+        if(Obstacles_Location[i]!=-1){
+            curr_obstacle = &Obstacles[ Obstacles_Location[i] ];
+            curr_obstacle->project(cam);
+            draw_obstacle(renderer, curr_obstacle);
+        }
+        cam->x += x;
+        x+=dx; dx+=curr_line->curve;
+
+        //car and obstacle collision
+        
+
+        //Skip lines that have same y coordinate 
+        int skip = 0;
+        Line3D * next_line = &map->lines[(i+1) % total_lines];
+    } 
+
+    //draw sky
+    draw_quad(renderer, SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2, Blue_Sky); 
+
+
+    cam->z+=cam->vz;
+    
+    
+}
+
 void framerate_cap(Uint32 start, int fps){
     static int cnt = 0;
     double ms_per_frame = 1000/fps;
@@ -602,10 +773,10 @@ void framerate_cap(Uint32 start, int fps){
     if( elapsed_time < ms_per_frame ){
         SDL_Delay( (int) (ms_per_frame - elapsed_time) );
     }
-    /*
+    
     if(cnt==10){std::cout<<elapsed_time<<' ';cnt=0;}
     else{cnt++;}
-    */
+    
 }
 
 int WinMain(){
@@ -624,28 +795,47 @@ int WinMain(){
             SDL_Event e;
 
             //Create Map
-            int Node_number = 5;
-            std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[5];
+            int Node_number = 11;
+            std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
             Nodes[0] = std::make_pair( std::make_pair(100,300) , 0.2 );
             Nodes[1] = std::make_pair( std::make_pair(500,1000) , -0.5 );
             Nodes[2] = std::make_pair( std::make_pair(1000,1200) , 1 );
             Nodes[3] = std::make_pair( std::make_pair(1400,1700) , -0.4 );
-            Nodes[4] = std::make_pair( std::make_pair(1700,1800) , -1.2 );
+            Nodes[4] = std::make_pair( std::make_pair(1800,2100) , -1.2 );
+            Nodes[5] = std::make_pair( std::make_pair(2100,3000) , 1.2 );
+            Nodes[6] = std::make_pair( std::make_pair(3100,3200) , -1.2 );
+            Nodes[7] = std::make_pair( std::make_pair(3300,3400) , 1.2 );
+            Nodes[8] = std::make_pair( std::make_pair(3500,3700) , -1.2 );
+            Nodes[9] = std::make_pair( std::make_pair(3800,3900) , 1.2 );
+            Nodes[10] = std::make_pair( std::make_pair(4000,6000) , -1.2 );
 
-            Map * test_map = new Map("Test_Map",5000,5,Nodes);
+            //Create Obstacle
+            int Obstacle_number = 1000;
+            srand (time(NULL));
+            Obstacle_build * obstacle_details = new Obstacle_build[Obstacle_number];
+            for(int i = 0 ; i < Obstacle_number ; i++){
+                obstacle_details[i].type = cone;
+                obstacle_details[i].x = ( (double) rand() / RAND_MAX * 2 - 1) * road_width ;
+                //std::cout<<obstacle_details[i].x<<' ';
+                obstacle_details[i].y = 0;
+                obstacle_details[i].segment_number_position = i*25 ;
+            }
+            
 
+            Map * test_map = new Map("Test_Map",10000,5,Nodes, Obstacle_number, obstacle_details);
+            
 
             //Create Camera
             Camera3D * cam = new Camera3D(0,1550,100,5,0,0);
 
-            Car3D * AE86 = new Car3D(100,100,"test_race_img/AE86_cropped.png",1);
+            Car3D * car_main = new Car3D(R7X,true);
 
             //Clear renderer
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
 
 
-            int k = 0;
+            //int k = 0;
             //While app is running
             while( !quit ){
                 //calculate time
@@ -659,12 +849,6 @@ int WinMain(){
                     
                     else if(e.type == SDL_KEYDOWN){
                         SDL_PumpEvents();
-                        if(keyarr[SDL_SCANCODE_UP])
-                            AE86->vz+=5;
-                        if(keyarr[SDL_SCANCODE_DOWN])
-                            AE86->vz-=5;
-                            AE86->vz = AE86->vz >= 0 ? AE86->vz : 0;
-
 
                         if(keyarr[SDL_SCANCODE_Q]){
                             cam->D+=0.1;
@@ -691,11 +875,17 @@ int WinMain(){
 
                 }
                 if(keyarr[SDL_SCANCODE_LEFT])
-                    AE86->x-=AE86->vz * 0.04 ;
+                    car_main->increment_x( car_main->get_speed_vz()*-0.04 );
                 if(keyarr[SDL_SCANCODE_RIGHT])
-                    AE86->x+=AE86->vz * 0.04 ;
+                    car_main->increment_x( car_main->get_speed_vz()*0.04 );
+                if(keyarr[SDL_SCANCODE_UP])
+                    car_main->increment_vz( 5 );
+                if(keyarr[SDL_SCANCODE_DOWN])
+                    car_main->increment_vz( -5 );
 
-                AE86->x-=AE86->vz * 0.01 * test_map->get_curve((int) AE86->z / segement_length );
+
+                car_main->increment_x( -1 * car_main->get_speed_vz() * 0.01 * test_map->get_curve((int) car_main->get_z() / segement_length ) );
+                //car_main->x-=car_main->vz * 0.01 * test_map->get_curve((int) car_main->z / segement_length );
                 
         
 
@@ -711,14 +901,14 @@ int WinMain(){
 
                 //draw speed
                 std::ostringstream stream;
-                stream << std::fixed << std::setprecision(2) << AE86->vz;
+                stream << std::fixed << std::setprecision(2) << car_main->vz;
                 std::string stringValue = stream.str();
                 draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*9/10);
                 stream.str("");
                 stream.clear();
 
                 //draw progress
-                stream << std::fixed << std::setprecision(2) << AE86->z/(test_map->Line_number*segement_length)*100<<'%';
+                stream << std::fixed << std::setprecision(2) << car_main->z/(test_map->Line_number*segement_length)*100<<'%';
                 stringValue = stream.str();
                 //std::cout<<stream.str()<<'\n';
                 draw_words(renderer, stringValue , SCREEN_WIDTH*1/10, SCREEN_HEIGHT*9/10);
@@ -726,9 +916,13 @@ int WinMain(){
                 stream.clear();
                 
                 //draw cars, main car
-                draw_cars(renderer, texture, cam , AE86);
-                AE86->x -= test_map->lines[(int) AE86->z/segement_length].curve * AE86->vz * 0.001;
+                draw_cars(renderer, cam , car_main);
+                car_main->x -= test_map->lines[(int) car_main->z/segement_length].curve * car_main->vz * 0.001;
+
+                Car_Obstacle_Collision(car_main,test_map,30);
                 
+                //draw obstacles
+                //draw_obstacles(renderer, cam, test_map);
 
                 //Present
                 SDL_RenderPresent(renderer);
