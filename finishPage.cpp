@@ -30,7 +30,7 @@ public:
 
     void show(finishPage &f, SDL_Renderer* REND, TTF_Font* Font,int way);
 
-    void setUsedTime(finishPage &f,double usedTime);
+    void setUsedTime(finishPage &f,double T);
 };
 
 void finishPage::setUsedTime(finishPage &f,double T){
@@ -65,7 +65,7 @@ void finishPage::show(finishPage &f, SDL_Renderer* REND, TTF_Font* Font,int way)
             Font = TTF_OpenFont("test_ttf/SegUIVar.ttf",12);
             f.notification.loadFromRenderedText("You've fallen into the sea!",White,REND,Font);
             f.notification.render(SCREEN_WIDTH*0.1,SCREEN_HEIGHT/2,SCREEN_WIDTH*0.8,SCREEN_HEIGHT/4,REND);
-            f.notification.loadFromRenderedText("I wonder if it's warm",White,REND,Font);
+            f.notification.loadFromRenderedText("Maybe next time ?",White,REND,Font);
             f.notification.render(SCREEN_WIDTH*0.15,SCREEN_HEIGHT*0.75,SCREEN_WIDTH*0.7,SCREEN_HEIGHT/4,REND);
             SDL_RenderPresent(REND);
         }

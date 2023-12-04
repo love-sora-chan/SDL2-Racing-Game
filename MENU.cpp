@@ -97,6 +97,7 @@ void MENU::appear(MENU &m,SDL_Renderer* REND,int spd = 5){
 		SDL_RenderClear(REND);
 		m.start_button.setAlpha(i);
 		m.record_button.setAlpha(i);
+        m.quit_button.setAlpha(i);
 		m.show(m,REND);
 	}
 	
@@ -108,6 +109,7 @@ void MENU::vanish(MENU &m,SDL_Renderer* REND,int spd = 5){
 		SDL_RenderClear(REND);
 		m.start_button.setAlpha(i);
 		m.record_button.setAlpha(i);
+        m.quit_button.setAlpha(i);
 		m.show(m,REND);
 	}
 	
