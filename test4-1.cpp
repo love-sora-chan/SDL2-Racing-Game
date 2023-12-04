@@ -802,7 +802,7 @@ int WinMain(){
             Nodes[2] = std::make_pair( std::make_pair(1000,1200) , 1 );
             Nodes[3] = std::make_pair( std::make_pair(1400,1700) , -0.4 );
             Nodes[4] = std::make_pair( std::make_pair(1800,2100) , -1.2 );
-            Nodes[5] = std::make_pair( std::make_pair(2100,3000) , 1.2 );
+            Nodes[5] = std::make_pair( std::make_pair(2200,3000) , 1.2 );
             Nodes[6] = std::make_pair( std::make_pair(3100,3200) , -1.2 );
             Nodes[7] = std::make_pair( std::make_pair(3300,3400) , 1.2 );
             Nodes[8] = std::make_pair( std::make_pair(3500,3700) , -1.2 );
@@ -810,7 +810,7 @@ int WinMain(){
             Nodes[10] = std::make_pair( std::make_pair(4000,6000) , -1.2 );
 
             //Create Obstacle
-            int Obstacle_number = 1000;
+            int Obstacle_number = 100;
             srand (time(NULL));
             Obstacle_build * obstacle_details = new Obstacle_build[Obstacle_number];
             for(int i = 0 ; i < Obstacle_number ; i++){
@@ -818,11 +818,11 @@ int WinMain(){
                 obstacle_details[i].x = ( (double) rand() / RAND_MAX * 2 - 1) * road_width ;
                 //std::cout<<obstacle_details[i].x<<' ';
                 obstacle_details[i].y = 0;
-                obstacle_details[i].segment_number_position = i*25 ;
+                obstacle_details[i].segment_number_position = i*100 ;
             }
             
 
-            Map * test_map = new Map("Test_Map",10000,5,Nodes, Obstacle_number, obstacle_details);
+            Map * test_map = new Map("Test_Map",10000,Node_number,Nodes, Obstacle_number, obstacle_details);
             
 
             //Create Camera
