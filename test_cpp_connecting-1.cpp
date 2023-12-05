@@ -13,6 +13,7 @@
 #include "MENU.cpp"
 #include "finishPage.cpp"
 #include "name_insert_page.cpp"
+#include "test4-2.cpp"
 
 SDL_Window* gWindow = NULL;
 SDL_Texture* gTexture = NULL;
@@ -25,7 +26,9 @@ Mix_Chunk* button = NULL;
 Mix_Chunk* changePageSound = NULL;
 
 
-SDL_Color White= {.r = 255, .g = 255, .b = 255, .a = SDL_ALPHA_OPAQUE};
+
+
+//SDL_Color White= {.r = 255, .g = 255, .b = 255, .a = SDL_ALPHA_OPAQUE};
 
 enum current_page{
 	Home_page = 0,
@@ -37,8 +40,8 @@ enum current_page{
 
 };
 current_page STATUS = Home_page;
-const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 720;
+/*const int SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 720;*/
 
 void InitializeSDL(){
 	//Initialize SDL
@@ -133,12 +136,21 @@ int WinMain(int argc,char *argv[]){
 			//Event handler
 			SDL_Event e;
 
+			//check if game is running
+			bool in_play = 0;
+
 			//While application is running
 			while( !quit )
 			{
+
+				Uint32 game_start_time;
+            	bool game_started = 0;
 				//Handle events on queue
 				while( SDL_PollEvent( &e ) )
 				{
+					//calculate time
+					Uint32 time_start = SDL_GetTicks();
+
 					//User requests quit
 					if( e.type == SDL_QUIT )
 					{
@@ -171,11 +183,13 @@ int WinMain(int argc,char *argv[]){
 									case SDLK_RETURN:{										
                                         switch(main_menu.opt){
                                             case 1:{
-                                                STATUS = Finish_Page;
+                                                /*STATUS = Finish_Page;
                                                 Mix_PlayChannel(-1,changePageSound,0);
                                                 Transition(gRenderer);
                                                 finish_page.Initialize(gRenderer);
                                                 finish_page.show(finish_page,gRenderer,Font,0);
+												*/
+												STATUS = Game_Page;
                                                 break;
                                             }
                                             case 2:{
@@ -244,6 +258,98 @@ int WinMain(int argc,char *argv[]){
 						}
                     }}
 					else if(STATUS == Game_Page){
+						if(in_play==0){
+							load_game_media(gRenderer);
+
+							create_map(0);
+							create_car();
+							create_camera();
+
+
+							in_play = 1;
+						}
+
+
+						if(keyarr[SDL_SCANCODE_LEFT])
+							car_main->move_left();
+						if(keyarr[SDL_SCANCODE_RIGHT])
+							car_main->move_right();
+						if(keyarr[SDL_SCANCODE_UP]){
+							car_main->accelerate();
+							if(game_started==0){
+								game_start_time = SDL_GetTicks();
+								game_started=1;
+							}
+							if(Mix_Paused(0) == 1 || Mix_Playing(0) == 0){
+								if(car_main->get_speed_vz()>500){
+									Mix_PlayChannel(0,accelerating_fast,0);
+								}
+								else{
+									Mix_PlayChannel(0,accelerating,0);
+								}
+							}
+						}
+						else{
+							if(Mix_Playing(0) != 0){
+								Mix_Pause(0);
+							}
+						}
+							
+						if(keyarr[SDL_SCANCODE_DOWN]){
+							car_main->decelerate();
+							if(  Mix_Paused(1) == 1 || Mix_Playing(1) == 0 ){
+								Mix_PlayChannel(1,decelerating,0);
+							}
+							if( car_main->get_speed_vz() <= 1 ){
+								Mix_Pause(1);
+							}
+						}
+						else{
+							if(Mix_Playing(1) != 0){
+								Mix_Pause(1);
+							}
+						}
+						//car turn due to road curve
+						car_main->turn(map);
+
+						//Test
+						SDL_SetRenderDrawColor(gRenderer, Blue_Sky.r,Blue_Sky.g,Blue_Sky.b,Blue_Sky.a);
+						SDL_RenderClear(gRenderer);
+
+						//Draw Scene
+						draw_scene(gRenderer, map, cam ,300);
+
+						//draw speed
+						show_speed(gRenderer, car_main);
+
+						//draw progress
+						show_percentage(gRenderer, map, car_main);
+
+						//show_time(game_start_time,SDL_GetTicks(),game_started);           
+						
+						//draw cars, main car
+						draw_cars(gRenderer, cam , car_main);
+
+						//Check collision between obstacle and car
+						Car_Obstacle_Collision(car_main,map,30);
+						
+						//check if fell into ocean
+						Fell_into_Ocean(car_main, map);
+
+						if(car_main->is_car_intact() == 0){
+							close_game();
+							STATUS = Home_page;
+							in_play = 0;
+						}
+						//check if passed finish line
+						if(Reach_Finish(car_main, map)){
+							close_game();
+							STATUS = Finish_Page;
+							in_play = 0;
+						}
+
+						//Present
+						SDL_RenderPresent(gRenderer);
 						
 					}
                     else if((int)STATUS == 5){
@@ -269,14 +375,22 @@ int WinMain(int argc,char *argv[]){
                         inp.handle_input(inp,gRenderer,e);
                     }
 					
+
+
+					framerate_cap(time_start, 60);
 				}
-				SDL_UpdateWindowSurface(gWindow);
+				
+				if(STATUS != Game_Page){
+					SDL_UpdateWindowSurface(gWindow);
+				}
+				
+
+				
 		}
 		SDL_DestroyRenderer(gRenderer);
 	}
 	SDL_DestroyWindow(gWindow);
 	
 	}
-
-return 0;	
+	return 0;
 }

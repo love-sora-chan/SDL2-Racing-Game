@@ -13,12 +13,15 @@
 
 #include "LTexture.cpp"
 
-const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 720;
+/*const int SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 720;*/
 const Uint8* keyarr = SDL_GetKeyboardState(NULL);
 
 int segement_length = 1600;
 int road_width = 2400;
+
+const int SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 720;
 
 SDL_Window * window = NULL;
 SDL_Surface * surface = NULL;
@@ -63,205 +66,11 @@ enum Obstacle_Type {
 std::string Obstacle_File_locations[Num_Of_Obstacles] = {"test_race_img/cone.png","test_race_img/broken_cone.png","test_race_img/rock_cropped.png","test_race_img/finish_flag_cropped.png"};
 SDL_Texture ** Obstacle_Textures = new SDL_Texture*[Num_Of_Obstacles];
 
-/*
-std::string Finish_Line_File_locations[1] = {"test_race_img/cone.png","test_race_img/rock_cropped.png"};
-SDL_Texture ** Obstacle_Textures = new SDL_Texture*[Num_Of_Obstacles];
-*/
-/*
-//Texture wrapper class
-class LTexture
-{
-    public:
-        //Initializes variables
-        LTexture();
 
-        //Deallocates memory
-        ~LTexture();
 
-        //Loads image at specified path
-        bool loadFromFile( SDL_Renderer * renderer , std::string path );
-        
-        //Creates image from font string
-        bool loadFromRenderedText( SDL_Renderer * renderer ,std::string textureText, SDL_Color textColor );
-
-        //Deallocates texture
-        void free();
-
-        //Set color modulation
-        void setColor( Uint8 red, Uint8 green, Uint8 blue );
-
-        //Set blending
-        void setBlendMode( SDL_BlendMode blending );
-
-        //Set alpha modulation
-        void setAlpha( Uint8 alpha );
-        
-        //Renders texture at given point
-        void render(SDL_Renderer * renderer , int x, int y, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE );
-
-        //Gets image dimensions
-        int getWidth();
-        int getHeight();
-
-    private:
-        //The actual hardware texture
-        SDL_Texture* mTexture;
-
-        //Image dimensions
-        int mWidth;
-        int mHeight;
-};
-*/
 
 //Rendered texture
 LTexture  gTextTexture;
-
-/*
-LTexture::LTexture()
-{
-	//Initialize
-	mTexture = NULL;
-	mWidth = 0;
-	mHeight = 0;
-}
-
-LTexture::~LTexture()
-{
-	//Deallocate
-	free();
-}
-
-bool LTexture::loadFromFile( SDL_Renderer * renderer ,std::string path )
-{
-	//Get rid of preexisting texture
-	free();
-
-	//The final texture
-	SDL_Texture* newTexture = NULL;
-
-	//Load image at specified path
-	SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
-	if( loadedSurface == NULL )
-	{
-		printf( "Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError() );
-	}
-	else
-	{
-		//Color key image
-		SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, 0, 0xFF, 0xFF ) );
-
-		//Create texture from surface pixels
-        newTexture = SDL_CreateTextureFromSurface( renderer, loadedSurface );
-		if( newTexture == NULL )
-		{
-			printf( "Unable to create texture from %s! SDL Error: %s\n", path.c_str(), SDL_GetError() );
-		}
-		else
-		{
-			//Get image dimensions
-			mWidth = loadedSurface->w;
-			mHeight = loadedSurface->h;
-		}
-
-		//Get rid of old loaded surface
-		SDL_FreeSurface( loadedSurface );
-	}
-
-	//Return success
-	mTexture = newTexture;
-	return mTexture != NULL;
-}
-
-bool LTexture::loadFromRenderedText( SDL_Renderer * renderer, std::string textureText, SDL_Color textColor )
-{
-    //Get rid of preexisting texture
-    free();
-
-    //Render text surface
-    SDL_Surface* textSurface = TTF_RenderText_Solid( gFont, textureText.c_str(), textColor );
-    if( textSurface == NULL )
-    {
-        printf( "Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError() );
-    }
-    else
-    {
-        //Create texture from surface pixels
-        mTexture = SDL_CreateTextureFromSurface( renderer, textSurface );
-        if( mTexture == NULL )
-        {
-            printf( "Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError() );
-        }
-        else
-        {
-            //Get image dimensions
-            mWidth = textSurface->w;
-            mHeight = textSurface->h;
-        }
-
-        //Get rid of old surface
-        SDL_FreeSurface( textSurface );
-    }
-    
-    //Return success
-    return mTexture != NULL;
-}
-
-void LTexture::free()
-{
-	//Free texture if it exists
-	if( mTexture != NULL )
-	{
-		SDL_DestroyTexture( mTexture );
-		mTexture = NULL;
-		mWidth = 0;
-		mHeight = 0;
-	}
-}
-
-void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
-{
-	//Modulate texture rgb
-	SDL_SetTextureColorMod( mTexture, red, green, blue );
-}
-
-void LTexture::setBlendMode( SDL_BlendMode blending )
-{
-	//Set blending function
-	SDL_SetTextureBlendMode( mTexture, blending );
-}
-		
-void LTexture::setAlpha( Uint8 alpha )
-{
-	//Modulate texture alpha
-	SDL_SetTextureAlphaMod( mTexture, alpha );
-}
-
-void LTexture::render( SDL_Renderer * renderer,int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip )
-{
-	//Set rendering space and render to screen
-	SDL_Rect renderQuad = { x, y, mWidth, mHeight };
-
-	//Set clip rendering dimensions
-	if( clip != NULL )
-	{
-		renderQuad.w = clip->w;
-		renderQuad.h = clip->h;
-	}
-
-	//Render to screen
-	SDL_RenderCopyEx( renderer, mTexture, clip, &renderQuad, angle, center, flip );
-}
-
-int LTexture::getWidth()
-{
-	return mWidth;
-}
-
-int LTexture::getHeight()
-{
-	return mHeight;
-}
-*/
 
 
 SDL_Texture* loadTexture( SDL_Renderer * renderer, std::string path )
@@ -551,7 +360,7 @@ class Car3D{
         }
 
         void turn(Map * map){
-            //car_main->increment_x( -1 * car_main->get_speed_vz() * 0.01 * test_map->get_curve((int) car_main->get_z() / segement_length ) );
+            //car_main->increment_x( -1 * car_main->get_speed_vz() * 0.01 * map->get_curve((int) car_main->get_z() / segement_length ) );
             x += -1 * vz * 0.01 * map->get_curve( (int) (z / segement_length) );
         }
 
@@ -586,7 +395,12 @@ class Car3D{
 };
 
 
+Map * map;
+Camera3D * cam;
+Car3D * car_main;
 
+
+/*
 bool init(){
     //Initialization flag
     bool success = true;
@@ -670,6 +484,8 @@ void close(){
     //SDL_DestroyWindowSurface(window);
     SDL_DestroyWindow(window);
 }
+*/
+
 
 //(x1,y1)corresponds to the coordinate of the line center on screen, w1 is the width of line
 void draw_quad(SDL_Renderer * renderer, int x1, int y1, int w1, int x2, int y2, int w2, SDL_Color color){
@@ -754,16 +570,22 @@ void Car_Obstacle_Collision(Car3D * car, Map * map, int detect_segment_range){
                     map->Obstacles[ obstacles_location[i] ].change_can_collide(false);
                     Mix_PlayChannel(0,crash,0);
                 }
+                else if(map->Obstacles[ obstacles_location[i] ].get_obstacle_type() == rock){
+                    Mix_PlayChannel(0,crash,0);
+                    car->car_destroyed();
+                }
             }             
         }
+    
     }
-
 }
 
-void Reach_Finish(Car3D * car, Map * map){
+bool Reach_Finish(Car3D * car, Map * map){
     if(car->get_z() >= map->Finish_Line_segement_number*segement_length){
         car->increment_vz(-1 * car->get_speed_vz()); 
+        return 1;
     }
+    else{return 0;}
 }
 
 void Fell_into_Ocean(Car3D * car, Map * map){
@@ -937,6 +759,92 @@ void framerate_cap(Uint32 start, int fps){
 
 
 
+//functions for main 
+void load_game_media(SDL_Renderer * renderer){
+    crash = Mix_LoadWAV("testmusic/crash.wav");
+    if(crash==NULL){ std::cout<<"Mix_LoadWav error\n";}
+    decelerating = Mix_LoadWAV("testmusic/car_break.wav");
+    accelerating = Mix_LoadWAV("testmusic/car_accelerate.wav");
+    accelerating_fast = Mix_LoadWAV("testmusic/car_accelerate_fast.wav");
+
+    music = Mix_LoadMUS("testmusic/Deja_Vu_fixed.mp3");
+    if(music==NULL){ std::cout<<"Mix_LoadMUS error : "<<Mix_GetError()<<'\n';}
+
+    //load texture for car and obstacle
+    for( int i = 0 ; i < Num_Of_Cars ; i++){Car_Textures[i] = loadTexture(renderer, Car_File_locations[i] );}
+    for( int i = 0 ; i < Num_Of_Obstacles ; i++){Obstacle_Textures[i] = loadTexture(renderer, Obstacle_File_locations[i] );}
+    Mix_PlayMusic(music,0);
+}
+
+void create_map(int n){
+    //Create Map
+    int Node_number = 11;
+    std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
+    Nodes[0] = std::make_pair( std::make_pair(100,300) , 0.2 );
+    Nodes[1] = std::make_pair( std::make_pair(500,1000) , -0.5 );
+    Nodes[2] = std::make_pair( std::make_pair(1000,1200) , 1 );
+    Nodes[3] = std::make_pair( std::make_pair(1400,1700) , -0.4 );
+    Nodes[4] = std::make_pair( std::make_pair(1800,2100) , -1.2 );
+    Nodes[5] = std::make_pair( std::make_pair(2200,3000) , 1.2 );
+    Nodes[6] = std::make_pair( std::make_pair(3100,3200) , -1.2 );
+    Nodes[7] = std::make_pair( std::make_pair(3300,3400) , 1.2 );
+    Nodes[8] = std::make_pair( std::make_pair(3500,3700) , -1.2 );
+    Nodes[9] = std::make_pair( std::make_pair(3800,3900) , 1.2 );
+    Nodes[10] = std::make_pair( std::make_pair(4000,6000) , -1.2 );
+
+    //Create Obstacle
+    int Obstacle_number = 100;
+    srand (time(NULL));
+    Obstacle_build * obstacle_details = new Obstacle_build[Obstacle_number];
+    //other obstacles
+    for(int i = 0 ; i < Obstacle_number - 1 ; i++){
+        obstacle_details[i].type = (i%2==0 ? cone : rock) ;
+        obstacle_details[i].x = ( (double) rand() / RAND_MAX * 2 - 1) * road_width ;
+        //std::cout<<obstacle_details[i].x<<' ';
+        obstacle_details[i].y = 0;
+        obstacle_details[i].segment_number_position = i*25 ;
+        obstacle_details[i].original_scale = 2 ;
+    }
+    //finish_flag
+    obstacle_details[Obstacle_number-1].type = finish_flag ;
+    obstacle_details[Obstacle_number-1].x = road_width * 1.3 ;
+    obstacle_details[Obstacle_number-1].y = 2000;
+    obstacle_details[Obstacle_number-1].segment_number_position = 2500 ;
+    obstacle_details[Obstacle_number-1].original_scale = 10;
+
+    map = new Map("map",110000,Node_number,Nodes, Obstacle_number, obstacle_details,2500);
+}
+
+void create_camera(){cam = new Camera3D(0,1550,100,5,0,0);}
+
+void create_car(){car_main = new Car3D(AE86,true);}
+
+void close_game(){
+    Mix_FreeChunk(crash);
+    Mix_FreeMusic(music);
+
+    delete cam;
+    delete map;
+    delete [] Car_Textures;
+    delete [] Obstacle_Textures;
+
+    //Free loaded images
+    gTextTexture.free();
+
+    //Free global font
+    TTF_CloseFont( gFont );
+    gFont = NULL;
+}
+
+
+
+
+
+
+
+
+
+/*
 int WinMain(){
 
     if( !init() ){
@@ -991,7 +899,7 @@ int WinMain(){
 
             
 
-            Map * test_map = new Map("Test_Map",110000,Node_number,Nodes, Obstacle_number, obstacle_details,2500);
+            Map * map = new Map("map",110000,Node_number,Nodes, Obstacle_number, obstacle_details,2500);
             
 
             //Create Camera
@@ -1089,20 +997,20 @@ int WinMain(){
                 }
                     
                 //car turn due to road curve
-                car_main->turn(test_map);
+                car_main->turn(map);
 
                 //Test
                 SDL_SetRenderDrawColor(renderer, Blue_Sky.r,Blue_Sky.g,Blue_Sky.b,Blue_Sky.a);
                 SDL_RenderClear(renderer);
 
                 //Draw Scene
-                draw_scene(renderer, test_map, cam ,300);
+                draw_scene(renderer, map, cam ,300);
 
                 //draw speed
                 show_speed(renderer, car_main);
 
                 //draw progress
-                show_percentage(renderer, test_map, car_main);
+                show_percentage(renderer, map, car_main);
 
                 show_time(game_start_time,SDL_GetTicks(),game_started);           
                 
@@ -1110,13 +1018,13 @@ int WinMain(){
                 draw_cars(renderer, cam , car_main);
 
                 //Check collision between obstacle and car
-                Car_Obstacle_Collision(car_main,test_map,30);
+                Car_Obstacle_Collision(car_main,map,30);
                 
                 //check if fell into ocean
-                Fell_into_Ocean(car_main, test_map);
+                Fell_into_Ocean(car_main, map);
 
                 //check if passed finish line
-                Reach_Finish(car_main, test_map);
+                Reach_Finish(car_main, map);
 
                 //Present
                 SDL_RenderPresent(renderer);
@@ -1127,7 +1035,7 @@ int WinMain(){
 
                 
             }
-            delete test_map;
+            delete map;
             delete cam;
             
         }
@@ -1138,3 +1046,4 @@ int WinMain(){
     return 0;
 }
 
+*/
