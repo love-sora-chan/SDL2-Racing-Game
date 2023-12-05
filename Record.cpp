@@ -123,7 +123,6 @@ void Record::setRecordName(Record &rec,std::string name){
         rec.UserName[rec.new_record_ind]=name;
         rec.new_record_ind = -1;
     }
-    
 }
 
 #endif
