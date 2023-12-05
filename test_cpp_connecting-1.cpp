@@ -88,7 +88,8 @@ void InitializeSDL(){
 
 
 void Transition(SDL_Renderer* REND){
-    SDL_RenderClear(REND);
+    SDL_SetRenderDrawColor(REND,0,0,0,255);
+	SDL_RenderClear(REND);
 	LTexture load_pic;
 	load_pic.loadFromFile("testimage/loading.png",REND);
 	load_pic.render(0,0,SCREEN_WIDTH,SCREEN_HEIGHT,REND);
@@ -261,7 +262,7 @@ int WinMain(int argc,char *argv[]){
 
 						Uint32 elapsed_time = 0;
 						if(in_play==0){
-							load_game_media(gRenderer);
+							load_game_media(gRenderer,Seaways_Noon);
 							create_map(Seaways_Noon,map);
 							create_car();
 							create_camera();
@@ -333,6 +334,7 @@ int WinMain(int argc,char *argv[]){
 							
 							//draw cars, main car
 							draw_cars(gRenderer, cam , car_main);
+							SDL_RenderPresent(gRenderer);
 
 							//Check collision between obstacle and car
 							Car_Obstacle_Collision(car_main,map,30);
@@ -340,8 +342,31 @@ int WinMain(int argc,char *argv[]){
 							//check if fell into ocean
 							Fell_into_Ocean(car_main, map);
 
+							//check if passed finish line
+							if(Reach_Finish(car_main, map)){
+								Mix_HaltMusic();
+								Mix_HaltChannel(-1);
+								close_game();
+								STATUS = InsertName_Page;
+								in_play = 0;
+								rec.setRecordTime(rec,((double)elapsed_time/1000));
+
+								//testing to finish page
+								//SDL_RenderClear(gRenderer);
+								Mix_PlayChannel(-1,changePageSound,0);
+								Transition(gRenderer);
+								inp.Initialize(inp,gRenderer);
+								inp.show_centered(inp,gRenderer);
+								//STATUS = InsertName_Page;  
+								//testing
+
+							}
+
+
+
 							if(car_main->is_car_intact() == 0){
-								Mix_PauseMusic();
+								Mix_HaltMusic();
+								Mix_HaltChannel(-1);
 								close_game();
 								STATUS = Home_page;
 								in_play = 0;
@@ -350,27 +375,10 @@ int WinMain(int argc,char *argv[]){
 								main_menu.choosing(main_menu.opt,main_menu,gRenderer);
 								main_menu.appear(main_menu,gRenderer);	
 							}
-							//check if passed finish line
-							if(Reach_Finish(car_main, map)){
-								Mix_PauseMusic();
-
-								close_game();
-								STATUS = InsertName_Page;
-								in_play = 0;
-								rec.setRecordTime(rec,(double)(elapsed_time/1000));
-								//testing to finish page
-								SDL_RenderClear(gRenderer);
-								Mix_PlayChannel(-1,changePageSound,0);
-								Transition(gRenderer);
-								inp.Initialize(inp,gRenderer);
-								inp.show_centered(inp,gRenderer);
-								STATUS = InsertName_Page;  
-								//testing
-
-							}
+							
 
 							//Present
-							SDL_RenderPresent(gRenderer);
+							
 							framerate_cap(time_start, 60);
 						}
 						

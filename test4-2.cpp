@@ -76,10 +76,10 @@ const int Num_of_Musics = 3;
 enum Music_type {
     Deja_Vu, Forever_Young, Tokyo_Drift
 };
-std::string Musics[Num_of_Musics] = {
+std::string Music_File_Location[Num_of_Musics] = {
     "testmusic/Deja_Vu_fixed.mp3",
     "testmusic/Forever Young - Symbol.mp3",
-    "testmusic/Tokyo Drift - If You Were Here  Remix"
+    "testmusic/Tokyo Drift - If You Were Here  Remix.mp3"
 };
 
 
@@ -227,14 +227,14 @@ class Map{
 public :
     std::string name;
     int Line_number, Node_number, Obstacle_number, Finish_Line_segement_number;
-    std::pair<std::pair<int,int>,double> * Nodes;
-    Obstacle_build * Obstacle_arr;
+    //std::pair<std::pair<int,int>,double> * Nodes;
+    //Obstacle_build * Obstacle_arr;
     Line3D * lines;
     Obstacle3D * Obstacles;
     int * Obstacles_Location;
     // Nodes consists <line number, curve>, meaning from last line number(default 0) to this line number, the curve would be <curve> 
     Map(std::string name, int Line_number , int Node_number, std::pair<std::pair<int,int>,double> * Nodes , int Obstacle_number , Obstacle_build * Obstacle_arr , int Finish_Line_segement_number){
-        this->name = name ,this->Line_number = Line_number, this->Nodes = Nodes, this->Node_number = Node_number, this->Obstacle_number = Obstacle_number, this->Obstacle_arr = Obstacle_arr, this->Finish_Line_segement_number = Finish_Line_segement_number;
+        this->name = name ,this->Line_number = Line_number, /*this->Nodes = Nodes,*/ this->Node_number = Node_number, this->Obstacle_number = Obstacle_number, /*this->Obstacle_arr = Obstacle_arr,*/ this->Finish_Line_segement_number = Finish_Line_segement_number;
         lines = new Line3D[Line_number];
         Obstacles = new Obstacle3D[Obstacle_number];
         Obstacles_Location = new int[Line_number];
@@ -277,7 +277,7 @@ public :
 
 
     ~Map(){
-        delete [] Nodes;
+        //delete [] Nodes;
         //delete Nodes;
         delete [] lines;
         //delete lines;
@@ -479,9 +479,17 @@ void draw_obstacle(SDL_Renderer * renderer, Obstacle3D * obstacle ){
 
     //std::cout<<obstacle->segment_number_position<<' '<<ObstacleViewport.w<<' '<<ObstacleViewport.h<<' '<<ObstacleViewport.x<<' '<<ObstacleViewport.y<<'\n';
 
-    SDL_RenderSetViewport( renderer, &ObstacleViewport );
-    SDL_RenderCopy( renderer, obstacle->obstacle_texture, NULL, NULL );     
-    SDL_RenderSetViewport( renderer, NULL );   
+    if(SDL_RenderSetViewport( renderer, &ObstacleViewport ) != 0){
+        std::cout<<"SDL Error in draw_obstacle : SDL_RenderSetViewport : "<<SDL_GetError();
+    }
+    if(SDL_RenderCopy( renderer, obstacle->obstacle_texture, NULL, NULL ) != 0){
+        std::cout<<"SDL Error in draw_obstacle : SDL_RenderCopy :"<<SDL_GetError();
+    }
+    if(SDL_RenderSetViewport( renderer, NULL ) != 0){
+        std::cout<<"SDL Error in draw_obstacle : SDL_RenderSetViewport :"<<SDL_GetError();
+    }
+         
+    
 }
 
 void Car_Obstacle_Collision(Car3D * car, Map * map, int detect_segment_range){
@@ -631,6 +639,8 @@ void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, int lines_dr
         //draw road segment line
         if((i/3)%6 < 3){
             draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width/32 , curr_line->screenX ,curr_line->screenY, curr_line->width/32 , White);
+            draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width/32 , curr_line->screenX ,curr_line->screenY, curr_line->width/32 , White);
+            draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width/32 , curr_line->screenX ,curr_line->screenY, curr_line->width/32 , White);
         }          
         //draw finish line
         
@@ -689,14 +699,24 @@ void framerate_cap(Uint32 start, int fps){
 
 
 //functions for main 
-void load_game_media(SDL_Renderer * renderer){
+void load_game_media(SDL_Renderer * renderer, Map_Type type){
     crash = Mix_LoadWAV("testmusic/crash.wav");
     if(crash==NULL){ std::cout<<"Mix_LoadWav error\n";}
     decelerating = Mix_LoadWAV("testmusic/car_break.wav");
     accelerating = Mix_LoadWAV("testmusic/car_accelerate.wav");
     accelerating_fast = Mix_LoadWAV("testmusic/car_accelerate_fast.wav");
-
-    music = Mix_LoadMUS("testmusic/Deja_Vu_fixed.mp3");
+    switch(type){
+        case Seaways_Dawn:
+            music = Mix_LoadMUS(Music_File_Location[Deja_Vu].c_str());
+            break;
+        case Seaways_Noon:
+            music = Mix_LoadMUS(Music_File_Location[Forever_Young].c_str());
+            break;
+        case Seaways_Dusk:
+            music = Mix_LoadMUS(Music_File_Location[Tokyo_Drift].c_str());
+            break;
+    };
+    
     if(music==NULL){ std::cout<<"Mix_LoadMUS error : "<<Mix_GetError()<<'\n';}
 
     //load texture for car and obstacle
@@ -707,6 +727,7 @@ void load_game_media(SDL_Renderer * renderer){
 
 void create_map(Map_Type type, Map * &map){
     //Create Map
+    Obstacle_build * obstacle_details;
     switch(type){
         case Seaways_Dawn:
         {
@@ -727,7 +748,7 @@ void create_map(Map_Type type, Map * &map){
             //Create Obstacle
             int Obstacle_number = 10;
             srand (time(NULL));
-            Obstacle_build * obstacle_details = new Obstacle_build[Obstacle_number];
+            obstacle_details = new Obstacle_build[Obstacle_number];
             //other obstacles
             for(int i = 0 ; i < Obstacle_number - 1 ; i++){
                 obstacle_details[i].type = (i%2==0 ? cone : rock) ;
@@ -766,7 +787,7 @@ void create_map(Map_Type type, Map * &map){
             //Create Obstacle
             int Obstacle_number = 1000;
             srand (time(NULL));
-            Obstacle_build * obstacle_details = new Obstacle_build[Obstacle_number];
+            obstacle_details = new Obstacle_build[Obstacle_number];
             //other obstacles
             for(int i = 0 ; i < Obstacle_number - 1 ; i++){
                 obstacle_details[i].type = (i%2==0 ? cone : rock) ;
@@ -780,14 +801,16 @@ void create_map(Map_Type type, Map * &map){
             obstacle_details[Obstacle_number-1].type = finish_flag ;
             obstacle_details[Obstacle_number-1].x = road_width * 1.3 ;
             obstacle_details[Obstacle_number-1].y = 2000;
-            obstacle_details[Obstacle_number-1].segment_number_position = 3000 ;
+            obstacle_details[Obstacle_number-1].segment_number_position = 5000 ;
             obstacle_details[Obstacle_number-1].original_scale = 10;
 
-            map = new Map("map",31000,Node_number,Nodes, Obstacle_number, obstacle_details,3000);
+            map = new Map("map",31000,Node_number,Nodes, Obstacle_number, obstacle_details,5000);
             break;        
         }
 
     };
+    delete [] obstacle_details;
+    //delete obstacle_details;
 
 
 
@@ -801,10 +824,12 @@ void close_game(){
     Mix_FreeChunk(crash);
     Mix_FreeMusic(music);
 
-    delete cam;
-    delete map;
-    delete [] Car_Textures;
-    delete [] Obstacle_Textures;
+    //delete cam;
+    //delete map;
+    //delete [] Car_Textures;
+    //delete [] Obstacle_Textures;
+
+    map = NULL;
 
     //Free loaded images
     gTextTexture.free();
