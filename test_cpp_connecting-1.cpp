@@ -149,8 +149,7 @@ int WinMain(int argc,char *argv[]){
 				//Handle events on queue
 				while( SDL_PollEvent( &e ) )
 				{
-					//calculate time
-					Uint32 time_start = SDL_GetTicks();
+
 
 					//User requests quit
 					if( e.type == SDL_QUIT )
@@ -259,17 +258,19 @@ int WinMain(int argc,char *argv[]){
 						}
                     }}
 					else if(STATUS == Game_Page){
-
+						
 						Uint32 elapsed_time = 0;
 						if(in_play==0){
-							load_game_media(gRenderer,Seaways_Noon);
-							create_map(Seaways_Noon,map);
+							load_game_media(gRenderer,Seaways_Dusk);
+							create_map(Seaways_Dusk,map);
 							create_car();
 							create_camera();
 							in_play = 1;
 						}
 
 						while( !quit && in_play == 1){
+							//calculate time
+							Uint32 time_start = SDL_GetTicks();
 							while( SDL_PollEvent( &e ) != 0){
 									if( e.type == SDL_QUIT ){
 										quit = true;
@@ -344,7 +345,8 @@ int WinMain(int argc,char *argv[]){
 
 							//check if passed finish line
 							if(Reach_Finish(car_main, map)){
-								Mix_HaltMusic();
+								//Mix_HaltMusic();
+								Mix_FadeOutMusic(0);
 								Mix_HaltChannel(-1);
 								close_game();
 								STATUS = InsertName_Page;
@@ -364,7 +366,7 @@ int WinMain(int argc,char *argv[]){
 
 
 
-							if(car_main->is_car_intact() == 0){
+							if(car_main->is_car_intact() != Intact){
 								Mix_HaltMusic();
 								Mix_HaltChannel(-1);
 								close_game();

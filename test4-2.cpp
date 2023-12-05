@@ -71,6 +71,8 @@ const int Num_Of_Maps = 3;
 enum Map_Type {
     Seaways_Dawn, Seaways_Noon, Seaways_Dusk
 };
+std::string Background_File_locations[Num_Of_Maps] = {"test_race_img/dusk.png","test_race_img/dusk.png","test_race_img/dusk.png"};
+SDL_Texture * Background_Texture;
 
 const int Num_of_Musics = 3;
 enum Music_type {
@@ -83,7 +85,9 @@ std::string Music_File_Location[Num_of_Musics] = {
 };
 
 
-
+enum Car_Status{
+    Intact, In_Water, On_Rock
+};
 
 //Rendered texture
 LTexture  gTextTexture;
@@ -218,6 +222,33 @@ public :
 
 };
 
+class Background{
+    int picture_width, picture_height;
+    std::string file_pos;
+    Map_Type type;
+
+    void resolve_file_attributes(){
+        switch(type){
+            case Seaways_Dawn:
+                picture_width = SCREEN_WIDTH, picture_height = SCREEN_HEIGHT;
+                break;
+            case Seaways_Noon:
+                picture_width = SCREEN_WIDTH, picture_height = SCREEN_HEIGHT;
+                break;
+            case Seaways_Dusk:
+                picture_width = SCREEN_WIDTH, picture_height = SCREEN_HEIGHT;
+                break;
+        };
+    }
+public:
+    Background(Map_Type type){
+        this->type = type;
+        resolve_file_attributes();
+    }
+    int get_picture_width(){return picture_width;}
+    int get_picture_height(){return picture_height;}
+};
+
 struct Obstacle_build{
     double x, y, segment_number_position, original_scale;
     Obstacle_Type type;
@@ -232,12 +263,15 @@ public :
     Line3D * lines;
     Obstacle3D * Obstacles;
     int * Obstacles_Location;
+    Background * background;
+    Map_Type type;
     // Nodes consists <line number, curve>, meaning from last line number(default 0) to this line number, the curve would be <curve> 
-    Map(std::string name, int Line_number , int Node_number, std::pair<std::pair<int,int>,double> * Nodes , int Obstacle_number , Obstacle_build * Obstacle_arr , int Finish_Line_segement_number){
-        this->name = name ,this->Line_number = Line_number, /*this->Nodes = Nodes,*/ this->Node_number = Node_number, this->Obstacle_number = Obstacle_number, /*this->Obstacle_arr = Obstacle_arr,*/ this->Finish_Line_segement_number = Finish_Line_segement_number;
+    Map(std::string name, int Line_number , int Node_number, std::pair<std::pair<int,int>,double> * Nodes , int Obstacle_number , Obstacle_build * Obstacle_arr , int Finish_Line_segement_number, Map_Type type){
+        this->name = name ,this->Line_number = Line_number, /*this->Nodes = Nodes,*/ this->Node_number = Node_number, this->Obstacle_number = Obstacle_number, /*this->Obstacle_arr = Obstacle_arr,*/ this->Finish_Line_segement_number = Finish_Line_segement_number, this->type = type;
         lines = new Line3D[Line_number];
         Obstacles = new Obstacle3D[Obstacle_number];
         Obstacles_Location = new int[Line_number];
+        background = new Background(type);
 
         for(int i = 0 ; i < Line_number ; i++){
             lines[i].z = segement_length*i;
@@ -271,6 +305,8 @@ public :
     }
 
     std::string get_name_of_map(){return name;}
+    Map_Type get_map_type(){return type;}
+    Background * get_background(){return background;}
     int get_obstacle_number(){return Obstacle_number;}
     Obstacle3D * get_Obstacles(){return Obstacles;}
     int * get_obstacles_location(){return Obstacles_Location;}
@@ -294,7 +330,8 @@ public :
 
 class Car3D{
     public:
-        bool main_car, car_intact = 1;
+        bool main_car;
+        Car_Status car_status = Intact;
 
         double x, y ,z,  vz, vx, original_scale = 2;
         int picture_width, picture_height;
@@ -322,12 +359,16 @@ class Car3D{
             resolve_file_attributes();
         }
 
-        bool is_car_intact(){
-            return car_intact;
+        Car_Status is_car_intact(){
+            return car_status;
         }
 
-        void car_destroyed(){
-            car_intact = 0;
+        void car_on_rock(){
+            car_status = On_Rock;
+        }
+
+        void car_in_water(){
+            car_status = In_Water;
         }
 
 
@@ -367,17 +408,19 @@ class Car3D{
         }
 
         double move_left(){
-            x += vz*-0.04;
+            x += (atan(vz/100000)+M_PI/2)*-25;
+            //x += log2(vz+1) * -1;
             return x;
         }
         double move_right(){
-            x += vz*0.04;
+            x += (atan(vz/100000)+M_PI/2)*25;
+            //x += log2(vz+1);
             return x;
         }
 
         void turn(Map * map){
             //car_main->increment_x( -1 * car_main->get_speed_vz() * 0.01 * map->get_curve((int) car_main->get_z() / segement_length ) );
-            x += -1 * vz * 0.01 * map->get_curve( (int) (z / segement_length) );
+            x += -1 * log2(vz+1) * 2 * map->get_curve( (int) (z / segement_length) );
         }
 
         void resolve_file_attributes(){
@@ -451,7 +494,7 @@ void draw_quad(SDL_Renderer * renderer, int x1, int y1, int w1, int x2, int y2, 
 
 void draw_cars(SDL_Renderer * renderer,  Camera3D * cam, Car3D * car){
 
-    if( car->is_car_intact() ){
+    if( car->is_car_intact() == Intact){
         car->project(cam);
         SDL_Rect CarViewport;
         CarViewport.w = (int) car->picture_width*car->original_scale*car->scale*1500;
@@ -492,6 +535,24 @@ void draw_obstacle(SDL_Renderer * renderer, Obstacle3D * obstacle ){
     
 }
 
+void draw_background(SDL_Renderer * renderer, Background  * background){
+    SDL_Rect ObstacleViewport;
+    ObstacleViewport.w = (int) background->get_picture_width();
+    ObstacleViewport.h = (int) background->get_picture_height();
+    ObstacleViewport.x = 0;
+    ObstacleViewport.y = 0;
+
+    if(SDL_RenderSetViewport( renderer, &ObstacleViewport ) != 0){
+        std::cout<<"SDL Error in draw_obstacle : SDL_RenderSetViewport : "<<SDL_GetError();
+    }
+    if(SDL_RenderCopy( renderer, Background_Texture, NULL, NULL ) != 0){
+        std::cout<<"SDL Error in draw_obstacle : SDL_RenderCopy :"<<SDL_GetError();
+    }
+    if(SDL_RenderSetViewport( renderer, NULL ) != 0){
+        std::cout<<"SDL Error in draw_obstacle : SDL_RenderSetViewport :"<<SDL_GetError();
+    }
+}
+
 void Car_Obstacle_Collision(Car3D * car, Map * map, int detect_segment_range){
 
     double distance_x = 300, distance_z = 1000, shift_z = -10 * segement_length ; // somehow the z coordinate of obstacle is delayed 10 segment_length
@@ -509,7 +570,7 @@ void Car_Obstacle_Collision(Car3D * car, Map * map, int detect_segment_range){
                 }
                 else if(map->Obstacles[ obstacles_location[i] ].get_obstacle_type() == rock){
                     Mix_PlayChannel(0,crash,0);
-                    car->car_destroyed();
+                    car->car_on_rock();
                 }
             }             
         }
@@ -528,7 +589,7 @@ bool Reach_Finish(Car3D * car, Map * map){
 void Fell_into_Ocean(Car3D * car, Map * map){
     if(car->get_x() > road_width*1.25 || car->get_x() < -1 * road_width * 1.25){
         car->increment_vz( -1 * car->get_speed_vz() );
-        car->car_destroyed();
+        car->car_in_water();
     }
 }
 
@@ -596,6 +657,11 @@ void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, int lines_dr
     Obstacle3D * curr_obstacle = NULL;
     SDL_Rect ObstacleViewport;
 
+    //draw background
+    draw_background(renderer, map->get_background());
+    //draw_quad(renderer, SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2, Blue_Sky); 
+
+
     //draw road
     for(int i = 1+start_pos ; i < lines_drawn+start_pos ; i++){
         
@@ -632,7 +698,7 @@ void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, int lines_dr
         SDL_Color road_mid_line = (i/3)%4 < 2 ? Light_Road : Dark_Road;
 
         //SDL_RenderClear(renderer);
-        draw_quad(renderer, 0, prev_line->screenY, SCREEN_WIDTH, 0,curr_line->screenY, SCREEN_WIDTH, Water);
+        //draw_quad(renderer, 0, prev_line->screenY, SCREEN_WIDTH, 0,curr_line->screenY, SCREEN_WIDTH, Water);
         draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width*1.2 , curr_line->screenX ,curr_line->screenY, curr_line->width*1.2 , rumble);
     
         draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width , curr_line->screenX ,curr_line->screenY, curr_line->width , road);
@@ -654,9 +720,7 @@ void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, int lines_dr
         }
     } 
 
-    //draw sky
-    draw_quad(renderer, SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2, Blue_Sky); 
-
+ 
     //draw obstacles
     x = 0, dx = 0;
     for(int i = 1+start_pos ; i < lines_drawn+start_pos ; i++){
@@ -722,6 +786,9 @@ void load_game_media(SDL_Renderer * renderer, Map_Type type){
     //load texture for car and obstacle
     for( int i = 0 ; i < Num_Of_Cars ; i++){Car_Textures[i] = loadTexture(renderer, Car_File_locations[i] );}
     for( int i = 0 ; i < Num_Of_Obstacles ; i++){Obstacle_Textures[i] = loadTexture(renderer, Obstacle_File_locations[i] );}
+    //load texture for backgrouind
+    Background_Texture = loadTexture(renderer,Background_File_locations[(int)type]);
+    if(Background_Texture==NULL){std::cout<<"Unable to Load Background Texture : "<<SDL_GetError();}
     Mix_PlayMusic(music,0);
 }
 
@@ -765,7 +832,7 @@ void create_map(Map_Type type, Map * &map){
             obstacle_details[Obstacle_number-1].segment_number_position = 250 ;
             obstacle_details[Obstacle_number-1].original_scale = 10;
 
-            map = new Map("map",110000,Node_number,Nodes, Obstacle_number, obstacle_details,250);
+            map = new Map("map",110000,Node_number,Nodes, Obstacle_number, obstacle_details,250,type);
             break;        
         }
         case Seaways_Noon:
@@ -804,7 +871,46 @@ void create_map(Map_Type type, Map * &map){
             obstacle_details[Obstacle_number-1].segment_number_position = 5000 ;
             obstacle_details[Obstacle_number-1].original_scale = 10;
 
-            map = new Map("map",31000,Node_number,Nodes, Obstacle_number, obstacle_details,5000);
+            map = new Map("map",31000,Node_number,Nodes, Obstacle_number, obstacle_details,5000,type);
+            break;        
+        }
+        case Seaways_Dusk:
+        {
+            int Node_number = 11;
+            std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
+            Nodes[0] = std::make_pair( std::make_pair(100,300) , 0.5 );
+            Nodes[1] = std::make_pair( std::make_pair(500,1000) , -0.1 );
+            Nodes[2] = std::make_pair( std::make_pair(1000,1200) , 1.3 );
+            Nodes[3] = std::make_pair( std::make_pair(1400,1700) , -0.2 );
+            Nodes[4] = std::make_pair( std::make_pair(1701,1800) , -1.5 );
+            Nodes[5] = std::make_pair( std::make_pair(1801,1900) , 1.5 );
+            Nodes[6] = std::make_pair( std::make_pair(3100,2000) , -1.5 );
+            Nodes[7] = std::make_pair( std::make_pair(2101,2200) , 1.5 );
+            Nodes[8] = std::make_pair( std::make_pair(2301,2550) , -1.5 );
+            Nodes[9] = std::make_pair( std::make_pair(3800,3900) , 1.2 );
+            Nodes[10] = std::make_pair( std::make_pair(4000,6000) , -1.2 );
+
+            //Create Obstacle
+            int Obstacle_number = 10;
+            srand (time(NULL));
+            obstacle_details = new Obstacle_build[Obstacle_number];
+            //other obstacles
+            for(int i = 0 ; i < Obstacle_number - 1 ; i++){
+                obstacle_details[i].type = (i%2==0 ? cone : rock) ;
+                obstacle_details[i].x = ( (double) rand() / RAND_MAX * 2 - 1) * road_width ;
+                //std::cout<<obstacle_details[i].x<<' ';
+                obstacle_details[i].y = 0;
+                obstacle_details[i].segment_number_position = i*30 ;
+                obstacle_details[i].original_scale = 2 ;
+            }
+            //finish_flag
+            obstacle_details[Obstacle_number-1].type = finish_flag ;
+            obstacle_details[Obstacle_number-1].x = road_width * 1.3 ;
+            obstacle_details[Obstacle_number-1].y = 2000;
+            obstacle_details[Obstacle_number-1].segment_number_position = 5000 ;
+            obstacle_details[Obstacle_number-1].original_scale = 10;
+
+            map = new Map("map",31000,Node_number,Nodes, Obstacle_number, obstacle_details,5000,type);
             break;        
         }
 
