@@ -42,8 +42,8 @@ class LTexture
 		void renderRight(float x, float y, SDL_Renderer*);
 		
 		//Gets image dimensions
-		float getWidth();
-		float getHeight();
+		int getWidth();
+		int getHeight();
 		//set mHeight and mWidth
 		void setdim(float w, float h);
 		
@@ -192,6 +192,16 @@ void LTexture::setBlendMode( SDL_BlendMode blending )
 {
 	//Set blending function
 	SDL_SetTextureBlendMode( mTexture, blending );
+}
+
+int LTexture::getWidth()
+{
+	return mWidth;
+}
+
+int LTexture::getHeight()
+{
+	return mHeight;
 }
 
 
