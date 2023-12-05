@@ -31,6 +31,7 @@ public:
     void show(finishPage &f, SDL_Renderer* REND, TTF_Font* Font,int way);
 
     void setUsedTime(finishPage &f,double T);
+    void setUsedTime(finishPage &f,double T);
 };
 
 void finishPage::setUsedTime(finishPage &f,double T){

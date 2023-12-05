@@ -76,10 +76,10 @@ const int Num_of_Musics = 3;
 enum Music_type {
     Deja_Vu, Forever_Young, Tokyo_Drift
 };
-std::string Musics[Num_of_Musics] = {
+std::string Music_File_Location[Num_of_Musics] = {
     "testmusic/Deja_Vu_fixed.mp3",
     "testmusic/Forever Young - Symbol.mp3",
-    "testmusic/Tokyo Drift - If You Were Here  Remix"
+    "testmusic/Tokyo Drift - If You Were Here  Remix.mp3"
 };
 
 
@@ -639,6 +639,8 @@ void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, int lines_dr
         //draw road segment line
         if((i/3)%6 < 3){
             draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width/32 , curr_line->screenX ,curr_line->screenY, curr_line->width/32 , White);
+            draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width/32 , curr_line->screenX ,curr_line->screenY, curr_line->width/32 , White);
+            draw_quad(renderer, prev_line->screenX, prev_line->screenY, prev_line->width/32 , curr_line->screenX ,curr_line->screenY, curr_line->width/32 , White);
         }          
         //draw finish line
         
@@ -697,14 +699,24 @@ void framerate_cap(Uint32 start, int fps){
 
 
 //functions for main 
-void load_game_media(SDL_Renderer * renderer){
+void load_game_media(SDL_Renderer * renderer, Map_Type type){
     crash = Mix_LoadWAV("testmusic/crash.wav");
     if(crash==NULL){ std::cout<<"Mix_LoadWav error\n";}
     decelerating = Mix_LoadWAV("testmusic/car_break.wav");
     accelerating = Mix_LoadWAV("testmusic/car_accelerate.wav");
     accelerating_fast = Mix_LoadWAV("testmusic/car_accelerate_fast.wav");
-
-    music = Mix_LoadMUS("testmusic/Deja_Vu_fixed.mp3");
+    switch(type){
+        case Seaways_Dawn:
+            music = Mix_LoadMUS(Music_File_Location[Deja_Vu].c_str());
+            break;
+        case Seaways_Noon:
+            music = Mix_LoadMUS(Music_File_Location[Forever_Young].c_str());
+            break;
+        case Seaways_Dusk:
+            music = Mix_LoadMUS(Music_File_Location[Tokyo_Drift].c_str());
+            break;
+    };
+    
     if(music==NULL){ std::cout<<"Mix_LoadMUS error : "<<Mix_GetError()<<'\n';}
 
     //load texture for car and obstacle
@@ -789,10 +801,10 @@ void create_map(Map_Type type, Map * &map){
             obstacle_details[Obstacle_number-1].type = finish_flag ;
             obstacle_details[Obstacle_number-1].x = road_width * 1.3 ;
             obstacle_details[Obstacle_number-1].y = 2000;
-            obstacle_details[Obstacle_number-1].segment_number_position = 3000 ;
+            obstacle_details[Obstacle_number-1].segment_number_position = 5000 ;
             obstacle_details[Obstacle_number-1].original_scale = 10;
 
-            map = new Map("map",31000,Node_number,Nodes, Obstacle_number, obstacle_details,3000);
+            map = new Map("map",31000,Node_number,Nodes, Obstacle_number, obstacle_details,5000);
             break;        
         }
 

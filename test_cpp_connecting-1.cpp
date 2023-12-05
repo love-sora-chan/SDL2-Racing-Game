@@ -262,8 +262,8 @@ int WinMain(int argc,char *argv[]){
 
 						Uint32 elapsed_time = 0;
 						if(in_play==0){
-							load_game_media(gRenderer);
-							create_map(Seaways_Dawn,map);
+							load_game_media(gRenderer,Seaways_Noon);
+							create_map(Seaways_Noon,map);
 							create_car();
 							create_camera();
 							in_play = 1;
