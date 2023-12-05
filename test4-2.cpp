@@ -67,6 +67,22 @@ std::string Obstacle_File_locations[Num_Of_Obstacles] = {"test_race_img/cone.png
 SDL_Texture ** Obstacle_Textures = new SDL_Texture*[Num_Of_Obstacles];
 
 
+const int Num_Of_Maps = 3;
+enum Map_Type {
+    Seaways_Dawn, Seaways_Noon, Seaways_Dusk
+};
+
+const int Num_of_Musics = 3;
+enum Music_type {
+    Deja_Vu, Forever_Young, Tokyo_Drift
+};
+std::string Musics[Num_of_Musics] = {
+    "testmusic/Deja_Vu_fixed.mp3",
+    "testmusic/Forever Young - Symbol.mp3",
+    "testmusic/Tokyo Drift - If You Were Here  Remix"
+};
+
+
 
 
 //Rendered texture
@@ -689,43 +705,92 @@ void load_game_media(SDL_Renderer * renderer){
     Mix_PlayMusic(music,0);
 }
 
-void create_map(int n){
+void create_map(Map_Type type, Map * &map){
     //Create Map
-    int Node_number = 11;
-    std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
-    Nodes[0] = std::make_pair( std::make_pair(100,300) , 0.2 );
-    Nodes[1] = std::make_pair( std::make_pair(500,1000) , -0.5 );
-    Nodes[2] = std::make_pair( std::make_pair(1000,1200) , 1 );
-    Nodes[3] = std::make_pair( std::make_pair(1400,1700) , -0.4 );
-    Nodes[4] = std::make_pair( std::make_pair(1800,2100) , -1.2 );
-    Nodes[5] = std::make_pair( std::make_pair(2200,3000) , 1.2 );
-    Nodes[6] = std::make_pair( std::make_pair(3100,3200) , -1.2 );
-    Nodes[7] = std::make_pair( std::make_pair(3300,3400) , 1.2 );
-    Nodes[8] = std::make_pair( std::make_pair(3500,3700) , -1.2 );
-    Nodes[9] = std::make_pair( std::make_pair(3800,3900) , 1.2 );
-    Nodes[10] = std::make_pair( std::make_pair(4000,6000) , -1.2 );
+    switch(type){
+        case Seaways_Dawn:
+        {
+            int Node_number = 11;
+            std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
+            Nodes[0] = std::make_pair( std::make_pair(100,300) , 0.2 );
+            Nodes[1] = std::make_pair( std::make_pair(500,1000) , -0.5 );
+            Nodes[2] = std::make_pair( std::make_pair(1000,1200) , 1 );
+            Nodes[3] = std::make_pair( std::make_pair(1400,1700) , -0.4 );
+            Nodes[4] = std::make_pair( std::make_pair(1800,2100) , -1.2 );
+            Nodes[5] = std::make_pair( std::make_pair(2200,3000) , 1.2 );
+            Nodes[6] = std::make_pair( std::make_pair(3100,3200) , -1.2 );
+            Nodes[7] = std::make_pair( std::make_pair(3300,3400) , 1.2 );
+            Nodes[8] = std::make_pair( std::make_pair(3500,3700) , -1.2 );
+            Nodes[9] = std::make_pair( std::make_pair(3800,3900) , 1.2 );
+            Nodes[10] = std::make_pair( std::make_pair(4000,6000) , -1.2 );
 
-    //Create Obstacle
-    int Obstacle_number = 100;
-    srand (time(NULL));
-    Obstacle_build * obstacle_details = new Obstacle_build[Obstacle_number];
-    //other obstacles
-    for(int i = 0 ; i < Obstacle_number - 1 ; i++){
-        obstacle_details[i].type = (i%2==0 ? cone : rock) ;
-        obstacle_details[i].x = ( (double) rand() / RAND_MAX * 2 - 1) * road_width ;
-        //std::cout<<obstacle_details[i].x<<' ';
-        obstacle_details[i].y = 0;
-        obstacle_details[i].segment_number_position = i*25 ;
-        obstacle_details[i].original_scale = 2 ;
-    }
-    //finish_flag
-    obstacle_details[Obstacle_number-1].type = finish_flag ;
-    obstacle_details[Obstacle_number-1].x = road_width * 1.3 ;
-    obstacle_details[Obstacle_number-1].y = 2000;
-    obstacle_details[Obstacle_number-1].segment_number_position = 2500 ;
-    obstacle_details[Obstacle_number-1].original_scale = 10;
+            //Create Obstacle
+            int Obstacle_number = 10;
+            srand (time(NULL));
+            Obstacle_build * obstacle_details = new Obstacle_build[Obstacle_number];
+            //other obstacles
+            for(int i = 0 ; i < Obstacle_number - 1 ; i++){
+                obstacle_details[i].type = (i%2==0 ? cone : rock) ;
+                obstacle_details[i].x = ( (double) rand() / RAND_MAX * 2 - 1) * road_width ;
+                //std::cout<<obstacle_details[i].x<<' ';
+                obstacle_details[i].y = 0;
+                obstacle_details[i].segment_number_position = i*25 ;
+                obstacle_details[i].original_scale = 2 ;
+            }
+            //finish_flag
+            obstacle_details[Obstacle_number-1].type = finish_flag ;
+            obstacle_details[Obstacle_number-1].x = road_width * 1.3 ;
+            obstacle_details[Obstacle_number-1].y = 2000;
+            obstacle_details[Obstacle_number-1].segment_number_position = 250 ;
+            obstacle_details[Obstacle_number-1].original_scale = 10;
 
-    map = new Map("map",110000,Node_number,Nodes, Obstacle_number, obstacle_details,2500);
+            map = new Map("map",110000,Node_number,Nodes, Obstacle_number, obstacle_details,250);
+            break;        
+        }
+        case Seaways_Noon:
+        {
+            int Node_number = 11;
+            std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
+            Nodes[0] = std::make_pair( std::make_pair(100,300) , 0.5 );
+            Nodes[1] = std::make_pair( std::make_pair(500,1000) , -0.1 );
+            Nodes[2] = std::make_pair( std::make_pair(1000,1200) , 1.3 );
+            Nodes[3] = std::make_pair( std::make_pair(1400,1700) , -0.2 );
+            Nodes[4] = std::make_pair( std::make_pair(1701,1800) , -1.5 );
+            Nodes[5] = std::make_pair( std::make_pair(1801,1900) , 1.5 );
+            Nodes[6] = std::make_pair( std::make_pair(3100,2000) , -1.5 );
+            Nodes[7] = std::make_pair( std::make_pair(2101,2200) , 1.5 );
+            Nodes[8] = std::make_pair( std::make_pair(2301,2550) , -1.5 );
+            Nodes[9] = std::make_pair( std::make_pair(3800,3900) , 1.2 );
+            Nodes[10] = std::make_pair( std::make_pair(4000,6000) , -1.2 );
+
+            //Create Obstacle
+            int Obstacle_number = 1000;
+            srand (time(NULL));
+            Obstacle_build * obstacle_details = new Obstacle_build[Obstacle_number];
+            //other obstacles
+            for(int i = 0 ; i < Obstacle_number - 1 ; i++){
+                obstacle_details[i].type = (i%2==0 ? cone : rock) ;
+                obstacle_details[i].x = ( (double) rand() / RAND_MAX * 2 - 1) * road_width ;
+                //std::cout<<obstacle_details[i].x<<' ';
+                obstacle_details[i].y = 0;
+                obstacle_details[i].segment_number_position = i*30 ;
+                obstacle_details[i].original_scale = 2 ;
+            }
+            //finish_flag
+            obstacle_details[Obstacle_number-1].type = finish_flag ;
+            obstacle_details[Obstacle_number-1].x = road_width * 1.3 ;
+            obstacle_details[Obstacle_number-1].y = 2000;
+            obstacle_details[Obstacle_number-1].segment_number_position = 3000 ;
+            obstacle_details[Obstacle_number-1].original_scale = 10;
+
+            map = new Map("map",31000,Node_number,Nodes, Obstacle_number, obstacle_details,3000);
+            break;        
+        }
+
+    };
+
+
+
 }
 
 void create_camera(){cam = new Camera3D(0,1550,100,5,0,0);}

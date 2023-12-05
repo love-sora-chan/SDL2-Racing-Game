@@ -262,7 +262,7 @@ int WinMain(int argc,char *argv[]){
 						Uint32 elapsed_time = 0;
 						if(in_play==0){
 							load_game_media(gRenderer);
-							create_map(0);
+							create_map(Seaways_Noon,map);
 							create_car();
 							create_camera();
 							in_play = 1;
@@ -341,16 +341,31 @@ int WinMain(int argc,char *argv[]){
 							Fell_into_Ocean(car_main, map);
 
 							if(car_main->is_car_intact() == 0){
+								Mix_PauseMusic();
 								close_game();
 								STATUS = Home_page;
 								in_play = 0;
+								Transition(gRenderer);
+								main_menu.Initialize(main_menu,gRenderer);
+								main_menu.choosing(main_menu.opt,main_menu,gRenderer);
+								main_menu.appear(main_menu,gRenderer);	
 							}
 							//check if passed finish line
 							if(Reach_Finish(car_main, map)){
+								Mix_PauseMusic();
+
 								close_game();
 								STATUS = InsertName_Page;
 								in_play = 0;
 								rec.setRecordTime(rec,(double)(elapsed_time/1000));
+								//testing to finish page
+								SDL_RenderClear(gRenderer);
+								Mix_PlayChannel(-1,changePageSound,0);
+								Transition(gRenderer);
+								inp.Initialize(inp,gRenderer);
+								inp.show_centered(inp,gRenderer);
+								STATUS = InsertName_Page;  
+								//testing
 
 							}
 
@@ -365,10 +380,8 @@ int WinMain(int argc,char *argv[]){
                             if(inp.name.length()==0)
                                 inp.name = "UNKNOWN";
 
-                            static double n = 30.1;
-                            rec.setRecordTime(rec,n);
                             rec.setRecordName(rec,inp.name);
-                            n -= 3.25;
+                            
 
                             rec.writeToFile(rec);
 
