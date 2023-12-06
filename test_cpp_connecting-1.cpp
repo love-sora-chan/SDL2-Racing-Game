@@ -13,7 +13,7 @@
 #include "MENU.cpp"
 #include "finishPage.cpp"
 #include "name_insert_page.cpp"
-#include "test4-2.cpp"
+#include "test4-3.cpp"
 
 SDL_Window* gWindow = NULL;
 SDL_Texture* gTexture = NULL;
@@ -28,7 +28,7 @@ Mix_Chunk* changePageSound = NULL;
 
 
 
-//SDL_Color White= {.r = 255, .g = 255, .b = 255, .a = SDL_ALPHA_OPAQUE};
+SDL_Color White= {.r = 255, .g = 255, .b = 255, .a = SDL_ALPHA_OPAQUE};
 
 enum current_page{
 	Home_page = 0,
@@ -40,8 +40,8 @@ enum current_page{
 
 };
 current_page STATUS = Home_page;
-/*const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 720;*/
+const int SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 720;
 
 void InitializeSDL(){
 	//Initialize SDL
@@ -287,7 +287,7 @@ int WinMain(int argc,char *argv[]){
 									game_started=1;
 								}
 								if(Mix_Paused(0) == 1 || Mix_Playing(0) == 0){
-									if(car_main->get_speed_vz()>500){
+									if(car_main->get_vz()>500){
 										Mix_PlayChannel(0,accelerating_fast,0);
 									}
 									else{
@@ -306,7 +306,7 @@ int WinMain(int argc,char *argv[]){
 								if(  Mix_Paused(1) == 1 || Mix_Playing(1) == 0 ){
 									Mix_PlayChannel(1,decelerating,0);
 								}
-								if( car_main->get_speed_vz() <= 1 ){
+								if( car_main->get_vz() <= 1 ){
 									Mix_Pause(1);
 								}
 							}
@@ -374,9 +374,6 @@ int WinMain(int argc,char *argv[]){
 								main_menu.choosing(main_menu.opt,main_menu,gRenderer);
 								main_menu.appear(main_menu,gRenderer);	
 							}
-							
-
-							//Present
 							
 							framerate_cap(time_start, 60);
 						}

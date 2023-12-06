@@ -22,8 +22,8 @@ const Uint8* keyarr = SDL_GetKeyboardState(NULL);
 int segement_length = 1600;
 int road_width = 2400;
 
-const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 720;
+extern const int SCREEN_WIDTH;
+extern const int SCREEN_HEIGHT;
 
 SDL_Window * window = NULL;
 SDL_Surface * surface = NULL;
@@ -44,7 +44,8 @@ Mix_Chunk* decelerating = NULL;
 Mix_Chunk* curse = NULL;
 
 
-SDL_Color White= {.r = 255, .g = 255, .b = 255, .a = SDL_ALPHA_OPAQUE};
+//extern SDL_Color White = {.r = 255, .g = 255, .b = 255, .a = SDL_ALPHA_OPAQUE};
+extern SDL_Color White;
 SDL_Color Black= {.r = 0, .g = 0, .b = 0, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Dark_Green= {.r = 0, .g = 102, .b = 0, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Light_Green= {.r = 0, .g = 255, .b = 0, .a = SDL_ALPHA_OPAQUE};
@@ -129,9 +130,10 @@ SDL_Texture* loadTexture( SDL_Renderer * renderer, std::string path )
 
 class Objects{
     protected:
-        double x,y,z,vx,vy,vz;
+        double x,y,z,vx,vy,vz,scale,original_scale;
+        int screenX, screenY, picture_width, picture_height;
     public:
-        Objects():x(0), y(0), z(0), vx(0), vy(0), vz(0){}
+        Objects():x(0), y(0), z(0), vx(0), vy(0), vz(0), scale(0), original_scale(2),screenX(0), screenY(0), picture_width(0), picture_height(0){}
 
         //get values
         double get_x(){return x;}
@@ -140,6 +142,12 @@ class Objects{
         double get_vx(){return vx;}
         double get_vy(){return vx;}
         double get_vz(){return vz;}
+        int get_screenX(){return screenX;}
+        int get_screenY(){return screenY;}
+        double get_picture_width(){return picture_width;}
+        double get_picture_height(){return picture_height;}
+        double get_scale(){return scale;}
+        double get_original_scale(){return original_scale;}
 
         //edit values
         double edit_x(double x){this->x = x;return x;}
@@ -148,6 +156,7 @@ class Objects{
         double edit_vx(double vx){this->vx = vx;return vx;}
         double edit_vy(double vy){this->vy = vy;return vy;}
         double edit_vz(double vz){this->vz = vz;return vz;}
+        double edit_scale(double scale){this->scale = scale;return scale;}
 
         //change value
         double increment_x(double delta_x){
@@ -177,40 +186,25 @@ class Objects{
 
 };
 
-class Camera3D{
+class Camera3D : public Objects{
     private:
-        double x, y ,z, D, vz, vx;
+        double D;
     public:
-        Camera3D(){
+        Camera3D() : Objects() {
             x=0, y=1000, z=0, D=5, vx = 0, vz = 0;
         }
-        Camera3D(double x, double y, double z, double D, double vx,double vz){
+        Camera3D(double x, double y, double z, double D, double vx,double vz)  : Objects() {
             this->x=x, this->y=y, this->z=z, this->D=D, this->vx=vx, this->vz=vz;
         }
-        double get_x(){return x;}
-        double get_y(){return y;}
-        double get_z(){return z;}
         double get_D(){return D;}
-        double get_vx(){return vx;}
-        double get_vz(){return vz;}
-
-        double increment_x(double delta_x){
-            x += delta_x;
-            return x;
-        }
-        double increment_z(double delta_z){
-            z += delta_z;
-            return z;
-        }
 };
 
-class Line3D{
+class Line3D : public Objects{
     private :
-        double x,y,z; //3D center coordinate of line
-        int screenX,screenY,width; //line coordinate on screen 
-        double scale, curve;
+        int width;
+        double curve;
     public:
-        Line3D():x(0), y(0), z(0), screenX(0), screenY(0), width(0), scale(0), curve(0){
+        Line3D():Objects(), curve(0){
         }
         //3D coordinate to screen coordinate
         void project(Camera3D * cam){
@@ -221,43 +215,25 @@ class Line3D{
             width = (int) (scale * road_width * SCREEN_WIDTH / 2);
         }
         //get value
-        double get_x(){return x;}
-        double get_y(){return y;}
-        double get_z(){return z;}
-        int get_screenX(){return screenX;}
-        int get_screenY(){return screenY;}
-        int get_width(){return width;}
-        double get_scale(){return scale;}
         double get_curve(){return curve;}
+        int get_width(){return width;}
 
         //edit value
-        double edit_x(double x){this->x = x;return x;}
-        double edit_y(double y){this->y = y;return y;}
-        double edit_z(double z){this->z = z;return z;}
         double edit_curve(double curve){this->curve = curve;return curve;}
         double edit_scale(double scale){this->scale = scale;return scale;}
 };
 
-class Finish_Line3D{
-    public:
-        double x, y ,z,  vz, vx, original_scale = 2;
-        int picture_width, picture_height;
-};
-
 class Obstacle3D : public Objects{
 private:
-    double x, y, z, scale, original_scale = 2;//cooridinate in 3D space
+    double scale, original_scale = 2;//cooridinate in 3D space
     int segment_number_position;
-    int screenX, screenY;//cooridinate on screen;
-    int picture_width, picture_height;
+    int picture_width = 0, picture_height = 0;
     bool can_collide = 1;
     Obstacle_Type type = cone;
     std::string file_pos;
     SDL_Texture * obstacle_texture;
-public:
-    Obstacle3D(){
-        x=0,y=0, segment_number_position=0;
-        type = cone;
+public: 
+    Obstacle3D() : Objects(), segment_number_position(0), type(cone){
         resolve_file_attributes();
     }
     Obstacle3D(int x, int y, int segment_number_position, Obstacle_Type type, double original_scale){
@@ -292,27 +268,34 @@ public:
 
     void project(Camera3D * cam){
         scale = cam->get_D()/(segment_number_position*segement_length - cam->get_z());
-        //scale = 1;
         screenX = (int) ((1 + scale*( x - cam->get_x() ))*SCREEN_WIDTH / 2);
         screenY = (int) ((1 - scale*( y - cam->get_y() ))*SCREEN_HEIGHT / 2);
-        //std::cout<<y - cam->y<<'\n';
     }
     //get value
-    double get_x(){return x;}
-    double get_y(){return y;}
     double get_z(){return segment_number_position*segement_length;}
+    double get_scale(){return scale;}
+    double get_original_scale(){return original_scale;}
+    double get_picture_width(){return picture_width;}
+    double get_picture_height(){return picture_height;}
+
     Obstacle_Type get_obstacle_type(){return type;}
     bool get_can_collide(){return can_collide;}
     int get_segment_number_position(){return segment_number_position;}
 
+    SDL_Texture * get_obstacle_texture(){return obstacle_texture;}
+
     //change value
-    double edit_x(double x){this->x = x;return x;}
-    double edit_y(double y){this->y = y;return y;}
-    double edit_z(double z){this->z = z;return z;}
+    double edit_scale(double scale){this->scale = scale;return scale;}
+    double edit_original_scale(double original_scale){this->original_scale = original_scale; return original_scale;}
+    int edit_segment_number_position(int segment_number_position){
+        this->segment_number_position = segment_number_position;
+        return segment_number_position;
+    }
+};
 
-
-
-
+class Finish_Line3D : public Obstacle3D{
+    public:
+        Finish_Line3D(): Obstacle3D(){}
 };
 
 class Background{
@@ -380,12 +363,12 @@ public :
         }
 
         for(int i = 0 ; i < Obstacle_number ; i++){
-            Obstacles[i].x = Obstacle_arr[i].x;
-            Obstacles[i].y = Obstacle_arr[i].y;
-            Obstacles[i].segment_number_position = Obstacle_arr[i].segment_number_position;
-            Obstacles_Location[ Obstacles[i].segment_number_position ] = i;
+            Obstacles[i].edit_x(Obstacle_arr[i].x);
+            Obstacles[i].edit_y(Obstacle_arr[i].y);
+            Obstacles[i].edit_segment_number_position( Obstacle_arr[i].segment_number_position );
+            Obstacles_Location[ Obstacles[i].get_segment_number_position() ] = i;
             Obstacles[i].change_type( Obstacle_arr[i].type );
-            Obstacles[i].original_scale = Obstacle_arr[i].original_scale;
+            Obstacles[i].edit_original_scale(Obstacle_arr[i].original_scale);
         }
     };
 
@@ -422,28 +405,27 @@ public :
 
 };
 
-class Car3D{
-    public:
+class Car3D : public Objects{
+    private:
         bool main_car;
         Car_Status car_status = Intact;
-
-        double x, y ,z,  vz, vx, original_scale = 3;
-        int picture_width, picture_height;
+        double original_scale = 3;
         Car_Type type;
         std::string file_pos;
         double shift = 0;
 
-        int screenX,screenY;
-        double scale;
+        int z = 1650;
 
         SDL_Texture * car_texture;
+    public:
+        Car3D():Objects(){
+        }
 
-        Car3D(Car_Type type , bool main_car){
-            x=0, y=0, z=1650, vx = 0, vz = 0;
+        Car3D(Car_Type type , bool main_car):Objects(){
             this->type = type, this->main_car = main_car;
             resolve_file_attributes();
         }        
-        Car3D(double x, double y, double z, double vx,double vz, Car_Type type,  double original_scale,  bool main_car){
+        Car3D(double x, double y, double z, double vx,double vz, Car_Type type,  double original_scale,  bool main_car):Objects(){
             this->x=x, this->y=y, this->z=z,  this->vx=vx, this->vz=vz, this->type = type,this->original_scale = original_scale, this->main_car = main_car;
             resolve_file_attributes();
         }
@@ -466,28 +448,11 @@ class Car3D{
         }
 
         double get_shift(){return shift;}
-        double get_speed_vx(){return vx;}
-        double increment_vx(double delta_vx){
-            vx += delta_vx;
-            return vx;
-        }
-        double get_x(){return x;}
-        double increment_x(double delta_x){
-            x += delta_x;
-            return x;
-        }
 
-        double get_speed_vz(){return vz;}
         double increment_vz(double delta_vz){
             vz += delta_vz;
             vz = vz>0 ? vz : 0;
             return vz;
-        }
-
-        double get_z(){return z;}
-        double increment_z(double delta_z){
-            z += delta_z;
-            return z;
         }
 
         double accelerate(){
@@ -513,7 +478,7 @@ class Car3D{
         }
 
         void turn(Map * map){
-            //car_main->increment_x( -1 * car_main->get_speed_vz() * 0.01 * map->get_curve((int) car_main->get_z() / segement_length ) );
+            //car_main->increment_x( -1 * car_main->get_vz() * 0.01 * map->get_curve((int) car_main->get_z() / segement_length ) );
             x += -1 * log2(vz+1) * 2 * map->get_curve( (int) (z / segement_length) );
             shift += -1 * log2(vz+1) * 2 * map->get_curve( (int) (z / segement_length) );
         }
@@ -546,6 +511,12 @@ class Car3D{
             //screenY = SCREEN_HEIGHT *4/5 ;
             //std::cout<<screenX<<' '<<scale*( y - cam->y )<<'\n';
         }
+
+        void update_position(){
+            
+        }
+
+        SDL_Texture * get_car_texture(){return car_texture;}
 };
 
 
@@ -592,17 +563,19 @@ void draw_cars(SDL_Renderer * renderer,  Camera3D * cam, Car3D * car){
     if( car->is_car_intact() == Intact){
         car->project(cam);
         SDL_Rect CarViewport;
-        CarViewport.w = (int) car->picture_width*car->original_scale*car->scale*1500;
-        CarViewport.h = (int) car->picture_width*car->original_scale*car->scale*1500;
-        CarViewport.x = car->screenX - CarViewport.w / 2;
-        CarViewport.y = car->screenY - CarViewport.h / 2;
+        CarViewport.w = (int) car->get_picture_width()*car->get_original_scale()*car->get_scale()*1500;
+        CarViewport.h = (int) car->get_picture_width()*car->get_original_scale()*car->get_scale()*1500;
+        CarViewport.x = car->get_screenX() - CarViewport.w / 2;
+        CarViewport.y = car->get_screenY() - CarViewport.h / 2;
 
         //std::cout<<CarViewport.w<<' '<<CarViewport.h<<' '<<CarViewport.x<<' '<<CarViewport.y<<'\n';
 
         SDL_RenderSetViewport( renderer, &CarViewport );
         
         //Render texture to screen
-        SDL_RenderCopy( renderer, car->car_texture, NULL, NULL );
+        if(SDL_RenderCopy( renderer, car->get_car_texture(), NULL, NULL ) != 0 || car->get_car_texture()==NULL){
+            std::cout<<"Render Copy Error in draw_cars : "<<SDL_GetError();
+        }
         SDL_RenderSetViewport( renderer, NULL );        
     }
 
@@ -610,17 +583,17 @@ void draw_cars(SDL_Renderer * renderer,  Camera3D * cam, Car3D * car){
 
 void draw_obstacle(SDL_Renderer * renderer, Obstacle3D * obstacle ){
     SDL_Rect ObstacleViewport;
-    ObstacleViewport.w = (int) obstacle->picture_width * obstacle->original_scale * obstacle->scale * 1500;
-    ObstacleViewport.h = (int) obstacle->picture_height * obstacle->original_scale * obstacle->scale * 1500;
-    ObstacleViewport.x = obstacle->screenX - ObstacleViewport.w / 2 ;
-    ObstacleViewport.y = obstacle->screenY - ObstacleViewport.h / 2 ;
+    ObstacleViewport.w = (int) obstacle->get_picture_width() * obstacle->get_original_scale() * obstacle->get_scale() * 1500;
+    ObstacleViewport.h = (int) obstacle->get_picture_height() * obstacle->get_original_scale() * obstacle->get_scale() * 1500;
+    ObstacleViewport.x = obstacle->get_screenX() - ObstacleViewport.w / 2 ;
+    ObstacleViewport.y = obstacle->get_screenY() - ObstacleViewport.h / 2 ;
 
     //std::cout<<obstacle->segment_number_position<<' '<<ObstacleViewport.w<<' '<<ObstacleViewport.h<<' '<<ObstacleViewport.x<<' '<<ObstacleViewport.y<<'\n';
 
     if(SDL_RenderSetViewport( renderer, &ObstacleViewport ) != 0){
         std::cout<<"SDL Error in draw_obstacle : SDL_RenderSetViewport : "<<SDL_GetError();
     }
-    if(SDL_RenderCopy( renderer, obstacle->obstacle_texture, NULL, NULL ) != 0){
+    if(SDL_RenderCopy( renderer, obstacle->get_obstacle_texture(), NULL, NULL ) != 0){
         std::cout<<"SDL Error in draw_obstacle : SDL_RenderCopy :"<<SDL_GetError();
     }
     if(SDL_RenderSetViewport( renderer, NULL ) != 0){
@@ -678,18 +651,18 @@ void Car_Obstacle_Collision(Car3D * car, Map * map, int detect_segment_range){
     for(int i = start_pos ; i < start_pos + detect_segment_range ; i++){
         if(obstacles_location[i% map->Line_number] != -1 && map->Obstacles[ obstacles_location[i] ].get_can_collide() == 1){
             if(car->get_x() - map->Obstacles[ obstacles_location[i] ].get_x() < distance_x && car->get_x() - map->Obstacles[ obstacles_location[i% map->Line_number] ].get_x() > -1 * distance_x && car->get_z() - map->Obstacles[ obstacles_location[i% map->Line_number] ].get_z() < distance_z + shift_z  && car->get_z() - map->Obstacles[ obstacles_location[i% map->Line_number] ].get_z() > -1 * distance_z + shift_z ){
-                //car->increment_vz( -1 * car->get_speed_vz() );
+                //car->increment_vz( -1 * car->get_vz() );
 
                 if(map->Obstacles[ obstacles_location[i] ].get_obstacle_type() == cone){
                     map->Obstacles[ obstacles_location[i] ].change_type(broken_cone);
                     map->Obstacles[ obstacles_location[i] ].change_can_collide(false);
                     Mix_PlayChannel(0,crash,0);
-                    car->increment_vz( -0.5 * car->get_speed_vz() );
+                    car->increment_vz( -0.5 * car->get_vz() );
                 }
                 else if(map->Obstacles[ obstacles_location[i] ].get_obstacle_type() == rock){
                     Mix_PlayChannel(0,crash,0);
                     car->car_on_rock();
-                    car->increment_vz( -1 * car->get_speed_vz() );
+                    car->increment_vz( -1 * car->get_vz() );
                 }
             }             
         }
@@ -699,7 +672,7 @@ void Car_Obstacle_Collision(Car3D * car, Map * map, int detect_segment_range){
 
 bool Reach_Finish(Car3D * car, Map * map){
     if(car->get_z() >= map->Finish_Line_segement_number*segement_length){
-        car->increment_vz(-1 * car->get_speed_vz()); 
+        car->increment_vz(-1 * car->get_vz()); 
         return 1;
     }
     else{return 0;}
@@ -707,7 +680,7 @@ bool Reach_Finish(Car3D * car, Map * map){
 
 void Fell_into_Ocean(Car3D * car, Map * map){
     if(car->get_x() > road_width*1.25 || car->get_x() < -1 * road_width * 1.25){
-        car->increment_vz( -1 * car->get_speed_vz() );
+        car->increment_vz( -1 * car->get_vz() );
         car->car_in_water();
     }
 }
@@ -750,6 +723,7 @@ Uint32 show_time(SDL_Renderer * renderer ,Uint32 start_time, Uint32 curr_time ,b
 void show_percentage( SDL_Renderer * renderer, Map * map ,Car3D * car){
     std::ostringstream stream;
     stream << std::fixed << std::setprecision(2) << car->get_z()/(map->Finish_Line_segement_number*segement_length)*100<<'%';
+    std::cout<<car->get_z()<<' '<<(map->Finish_Line_segement_number*segement_length)<<'\n';
     std::string stringValue = stream.str();
     stringValue = stream.str();
     draw_words(renderer, stringValue , SCREEN_WIDTH*1/10, SCREEN_HEIGHT*9/10);
@@ -759,7 +733,7 @@ void show_percentage( SDL_Renderer * renderer, Map * map ,Car3D * car){
 
 void show_speed(SDL_Renderer * renderer, Car3D * car){
     std::ostringstream stream;
-    stream << std::fixed << std::setprecision(2) << car->get_speed_vz() / 20 <<"km/hr";
+    stream << std::fixed << std::setprecision(2) << car->get_vz() / 20 <<"km/hr";
     std::string stringValue = stream.str();
     draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*9/10);
     stream.str("");
@@ -1050,12 +1024,6 @@ void create_car(){car_main = new Car3D(AE86,true);}
 void close_game(){
     Mix_FreeChunk(crash);
     Mix_FreeMusic(music);
-
-    //delete cam;
-    //delete map;
-    //delete [] Car_Textures;
-    //delete [] Obstacle_Textures;
-
     map = NULL;
 
     //Free loaded images
