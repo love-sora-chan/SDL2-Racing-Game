@@ -262,7 +262,7 @@ int WinMain(int argc,char *argv[]){
 						Uint32 elapsed_time = 0;
 						if(in_play==0){
 							load_game_media(gRenderer,Seaways_Dusk);
-							create_map(Seaways_Dusk,map);
+							create_map(Seaways_Dusk,Easy,map);
 							create_car();
 							create_camera();
 							in_play = 1;
@@ -323,7 +323,7 @@ int WinMain(int argc,char *argv[]){
 							SDL_RenderClear(gRenderer);
 
 							//Draw Scene
-							draw_scene(gRenderer, map, cam ,300);
+							draw_scene(gRenderer, map, cam ,car_main, 300);
 
 							//draw speed
 							show_speed(gRenderer, car_main);
@@ -363,10 +363,7 @@ int WinMain(int argc,char *argv[]){
 								//testing
 
 							}
-
-
-
-							if(car_main->is_car_intact() != Intact){
+							else if(car_main->is_car_intact() != Intact){
 								Mix_HaltMusic();
 								Mix_HaltChannel(-1);
 								close_game();

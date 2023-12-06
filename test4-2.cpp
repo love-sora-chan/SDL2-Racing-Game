@@ -69,9 +69,13 @@ SDL_Texture ** Obstacle_Textures = new SDL_Texture*[Num_Of_Obstacles];
 
 const int Num_Of_Maps = 3;
 enum Map_Type {
-    Seaways_Dawn, Seaways_Noon, Seaways_Dusk
+    Seaways_Noon, Seaways_Dusk, Seaways_Night
 };
-std::string Background_File_locations[Num_Of_Maps] = {"test_race_img/dusk.png","test_race_img/dusk.png","test_race_img/dusk.png"};
+const int Num_of_Difficulty = 3;
+enum Difficulty{
+    Easy, Medium, Hard
+};
+std::string Background_File_locations[Num_Of_Maps] = {"test_race_img/dusk.png","test_race_img/dusk4_edited2.png","test_race_img/dusk.png"};
 SDL_Texture * Background_Texture;
 
 const int Num_of_Musics = 3;
@@ -229,13 +233,13 @@ class Background{
 
     void resolve_file_attributes(){
         switch(type){
-            case Seaways_Dawn:
-                picture_width = SCREEN_WIDTH, picture_height = SCREEN_HEIGHT;
-                break;
             case Seaways_Noon:
                 picture_width = SCREEN_WIDTH, picture_height = SCREEN_HEIGHT;
                 break;
             case Seaways_Dusk:
+                picture_width = 3840, picture_height = 576;
+                break;
+            case Seaways_Night:
                 picture_width = SCREEN_WIDTH, picture_height = SCREEN_HEIGHT;
                 break;
         };
@@ -247,6 +251,7 @@ public:
     }
     int get_picture_width(){return picture_width;}
     int get_picture_height(){return picture_height;}
+    Map_Type get_type(){return type;}
 };
 
 struct Obstacle_build{
@@ -333,10 +338,11 @@ class Car3D{
         bool main_car;
         Car_Status car_status = Intact;
 
-        double x, y ,z,  vz, vx, original_scale = 2;
+        double x, y ,z,  vz, vx, original_scale = 3;
         int picture_width, picture_height;
         Car_Type type;
         std::string file_pos;
+        double shift = 0;
 
         int screenX,screenY;
         double scale;
@@ -371,7 +377,7 @@ class Car3D{
             car_status = In_Water;
         }
 
-
+        double get_shift(){return shift;}
         double get_speed_vx(){return vx;}
         double increment_vx(double delta_vx){
             vx += delta_vx;
@@ -421,6 +427,7 @@ class Car3D{
         void turn(Map * map){
             //car_main->increment_x( -1 * car_main->get_speed_vz() * 0.01 * map->get_curve((int) car_main->get_z() / segement_length ) );
             x += -1 * log2(vz+1) * 2 * map->get_curve( (int) (z / segement_length) );
+            shift += -1 * log2(vz+1) * 2 * map->get_curve( (int) (z / segement_length) );
         }
 
         void resolve_file_attributes(){
@@ -535,17 +542,37 @@ void draw_obstacle(SDL_Renderer * renderer, Obstacle3D * obstacle ){
     
 }
 
-void draw_background(SDL_Renderer * renderer, Background  * background){
-    SDL_Rect ObstacleViewport;
-    ObstacleViewport.w = (int) background->get_picture_width();
-    ObstacleViewport.h = (int) background->get_picture_height();
-    ObstacleViewport.x = 0;
-    ObstacleViewport.y = 0;
+void draw_background(SDL_Renderer * renderer, Background  * background, int shift){
+    SDL_Rect BgsrcViewport;
+    SDL_Rect BgdestViewport;
+    BgsrcViewport.w = 0;
+    BgsrcViewport.h = 0;
+    BgsrcViewport.x = 0;
+    BgsrcViewport.y = 0;
+    
+    switch( background->get_type() ){
+        case Seaways_Noon:
+            break;
+        case Seaways_Dusk:
+            BgsrcViewport.w = 2048;
+            BgsrcViewport.h = 576;
+            BgsrcViewport.x = background->get_picture_width()/2 - BgsrcViewport.w / 2 - shift*0.1;
+            BgsrcViewport.y = background->get_picture_height()/2 - BgsrcViewport.h / 2;
+            break;
+        case Seaways_Night:
+            break;
+    }
+    BgdestViewport.w = SCREEN_WIDTH;
+    BgdestViewport.h = SCREEN_HEIGHT/2;
+    BgdestViewport.x = 0;
+    BgdestViewport.y = 0;
 
-    if(SDL_RenderSetViewport( renderer, &ObstacleViewport ) != 0){
+
+
+    if(SDL_RenderSetViewport( renderer, &BgdestViewport ) != 0){
         std::cout<<"SDL Error in draw_obstacle : SDL_RenderSetViewport : "<<SDL_GetError();
     }
-    if(SDL_RenderCopy( renderer, Background_Texture, NULL, NULL ) != 0){
+    if(SDL_RenderCopy( renderer, Background_Texture, &BgsrcViewport, &BgdestViewport ) != 0){
         std::cout<<"SDL Error in draw_obstacle : SDL_RenderCopy :"<<SDL_GetError();
     }
     if(SDL_RenderSetViewport( renderer, NULL ) != 0){
@@ -555,22 +582,24 @@ void draw_background(SDL_Renderer * renderer, Background  * background){
 
 void Car_Obstacle_Collision(Car3D * car, Map * map, int detect_segment_range){
 
-    double distance_x = 300, distance_z = 1000, shift_z = -10 * segement_length ; // somehow the z coordinate of obstacle is delayed 10 segment_length
+    double distance_x = 400, distance_z = 1500, shift_z = -10 * segement_length ; // somehow the z coordinate of obstacle is delayed 10 segment_length
     int start_pos = car->get_z()/segement_length;
     int * obstacles_location = map->get_obstacles_location();
     for(int i = start_pos ; i < start_pos + detect_segment_range ; i++){
         if(obstacles_location[i% map->Line_number] != -1 && map->Obstacles[ obstacles_location[i] ].get_can_collide() == 1){
             if(car->get_x() - map->Obstacles[ obstacles_location[i] ].get_x() < distance_x && car->get_x() - map->Obstacles[ obstacles_location[i% map->Line_number] ].get_x() > -1 * distance_x && car->get_z() - map->Obstacles[ obstacles_location[i% map->Line_number] ].get_z() < distance_z + shift_z  && car->get_z() - map->Obstacles[ obstacles_location[i% map->Line_number] ].get_z() > -1 * distance_z + shift_z ){
-                car->increment_vz( -1 * car->get_speed_vz() );
+                //car->increment_vz( -1 * car->get_speed_vz() );
 
                 if(map->Obstacles[ obstacles_location[i] ].get_obstacle_type() == cone){
                     map->Obstacles[ obstacles_location[i] ].change_type(broken_cone);
                     map->Obstacles[ obstacles_location[i] ].change_can_collide(false);
                     Mix_PlayChannel(0,crash,0);
+                    car->increment_vz( -0.5 * car->get_speed_vz() );
                 }
                 else if(map->Obstacles[ obstacles_location[i] ].get_obstacle_type() == rock){
                     Mix_PlayChannel(0,crash,0);
                     car->car_on_rock();
+                    car->increment_vz( -1 * car->get_speed_vz() );
                 }
             }             
         }
@@ -647,7 +676,7 @@ void show_speed(SDL_Renderer * renderer, Car3D * car){
     stream.clear();
 }
 
-void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, int lines_drawn){
+void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, Car3D * car,int lines_drawn){
     int start_pos = cam->z / segement_length;
     int total_lines = map->Line_number;
     double x = 0, dx = 0;
@@ -658,7 +687,7 @@ void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, int lines_dr
     SDL_Rect ObstacleViewport;
 
     //draw background
-    draw_background(renderer, map->get_background());
+    draw_background(renderer, map->get_background(), car->get_shift());
     //draw_quad(renderer, SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2, Blue_Sky); 
 
 
@@ -770,13 +799,13 @@ void load_game_media(SDL_Renderer * renderer, Map_Type type){
     accelerating = Mix_LoadWAV("testmusic/car_accelerate.wav");
     accelerating_fast = Mix_LoadWAV("testmusic/car_accelerate_fast.wav");
     switch(type){
-        case Seaways_Dawn:
+        case Seaways_Noon:
             music = Mix_LoadMUS(Music_File_Location[Deja_Vu].c_str());
             break;
-        case Seaways_Noon:
+        case Seaways_Dusk:
             music = Mix_LoadMUS(Music_File_Location[Forever_Young].c_str());
             break;
-        case Seaways_Dusk:
+        case Seaways_Night:
             music = Mix_LoadMUS(Music_File_Location[Tokyo_Drift].c_str());
             break;
     };
@@ -788,15 +817,16 @@ void load_game_media(SDL_Renderer * renderer, Map_Type type){
     for( int i = 0 ; i < Num_Of_Obstacles ; i++){Obstacle_Textures[i] = loadTexture(renderer, Obstacle_File_locations[i] );}
     //load texture for backgrouind
     Background_Texture = loadTexture(renderer,Background_File_locations[(int)type]);
+
     if(Background_Texture==NULL){std::cout<<"Unable to Load Background Texture : "<<SDL_GetError();}
     Mix_PlayMusic(music,0);
 }
 
-void create_map(Map_Type type, Map * &map){
+void create_map(Map_Type type, Difficulty difficulty, Map * &map){
     //Create Map
     Obstacle_build * obstacle_details;
     switch(type){
-        case Seaways_Dawn:
+        case Seaways_Noon:
         {
             int Node_number = 11;
             std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
@@ -835,7 +865,7 @@ void create_map(Map_Type type, Map * &map){
             map = new Map("map",110000,Node_number,Nodes, Obstacle_number, obstacle_details,250,type);
             break;        
         }
-        case Seaways_Noon:
+        case Seaways_Dusk:
         {
             int Node_number = 11;
             std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
@@ -852,7 +882,7 @@ void create_map(Map_Type type, Map * &map){
             Nodes[10] = std::make_pair( std::make_pair(4000,6000) , -1.2 );
 
             //Create Obstacle
-            int Obstacle_number = 1000;
+            int Obstacle_number = 100;
             srand (time(NULL));
             obstacle_details = new Obstacle_build[Obstacle_number];
             //other obstacles
@@ -861,7 +891,7 @@ void create_map(Map_Type type, Map * &map){
                 obstacle_details[i].x = ( (double) rand() / RAND_MAX * 2 - 1) * road_width ;
                 //std::cout<<obstacle_details[i].x<<' ';
                 obstacle_details[i].y = 0;
-                obstacle_details[i].segment_number_position = i*30 ;
+                obstacle_details[i].segment_number_position = i*50 ;
                 obstacle_details[i].original_scale = 2 ;
             }
             //finish_flag
@@ -874,7 +904,7 @@ void create_map(Map_Type type, Map * &map){
             map = new Map("map",31000,Node_number,Nodes, Obstacle_number, obstacle_details,5000,type);
             break;        
         }
-        case Seaways_Dusk:
+        case Seaways_Night:
         {
             int Node_number = 11;
             std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
