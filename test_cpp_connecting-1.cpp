@@ -261,8 +261,8 @@ int WinMain(int argc,char *argv[]){
 						
 						Uint32 elapsed_time = 0;
 						if(in_play==0){
-							load_game_media(gRenderer,Seaways_Dusk);
-							create_map(Seaways_Dusk,Easy,map);
+							load_game_media(gRenderer,Seaways_Night,Hard);
+							create_map(Seaways_Night,Easy,map);
 							create_car();
 							create_camera();
 							in_play = 1;
@@ -317,11 +317,8 @@ int WinMain(int argc,char *argv[]){
 							}
 							//car turn due to road curve
 							car_main->turn(map);
-
-							//Test
-							SDL_SetRenderDrawColor(gRenderer, Blue_Sky.r,Blue_Sky.g,Blue_Sky.b,Blue_Sky.a);
-							SDL_RenderClear(gRenderer);
-
+							//update car position
+							car_main->update_position();
 							//Draw Scene
 							draw_scene(gRenderer, map, cam ,car_main, 300);
 

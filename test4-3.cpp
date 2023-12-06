@@ -79,17 +79,31 @@ const int Num_of_Difficulty = 3;
 enum Difficulty{
     Easy, Medium, Hard
 };
-std::string Background_File_locations[Num_Of_Maps] = {"test_race_img/dusk.png","test_race_img/dusk4_edited2.png","test_race_img/dusk.png"};
+std::string Background_File_locations[Num_Of_Maps] = {"test_race_img/dusk.png","test_race_img/dusk4_edited2.png","test_race_img/night.png"};
 SDL_Texture * Background_Texture;
 
-const int Num_of_Musics = 3;
+const int Num_of_Musics = 9;
 enum Music_type {
-    Deja_Vu, Forever_Young, Tokyo_Drift
+    Deja_Vu, 
+    Forever_Young, 
+    Dont_Stop_The_Music,
+    Grand_Prix,
+    Together_Forever,
+    Night_Of_Fire,
+    Tokyo_Drift,
+    Gas_Gas_Gas,
+    Eat_You_Up
 };
 std::string Music_File_Location[Num_of_Musics] = {
     "testmusic/Deja_Vu_fixed.mp3",
     "testmusic/Forever Young - Symbol.mp3",
-    "testmusic/Tokyo Drift - If You Were Here  Remix.mp3"
+    "testmusic/DONT STOP THE MUSIC,mp3",
+    "testmusic/Grand Prix.mp3",
+    "testmusic/Together Forever.mp3",
+    "testmusic/Night Of Fire.mp3",
+    "testmusic/Tokyo Drift - If You Were Here  Remix.mp3",
+    "testmusic/GAS GAS GAS.mp3",
+    "testmusic/Eat You Up.mp3"
 };
 
 
@@ -133,12 +147,13 @@ class Objects{
         double x,y,z,vx,vy,vz,scale,original_scale;
         int screenX, screenY, picture_width, picture_height;
     public:
-        Objects():x(0), y(0), z(0), vx(0), vy(0), vz(0), scale(0), original_scale(2),screenX(0), screenY(0), picture_width(0), picture_height(0){}
+        Objects():x(0), y(0), z(1650), vx(0), vy(0), vz(0), scale(0), original_scale(2),screenX(0), screenY(0), picture_width(0), picture_height(0){}
+        Objects(double new_z):x(0), y(0), z(new_z), vx(0), vy(0), vz(0), scale(0), original_scale(2),screenX(0), screenY(0), picture_width(0), picture_height(0){}
 
         //get values
         double get_x(){return x;}
         double get_y(){return y;}
-        double get_z(){return z;}
+        virtual double get_z(){return z;}
         double get_vx(){return vx;}
         double get_vy(){return vx;}
         double get_vz(){return vz;}
@@ -157,6 +172,7 @@ class Objects{
         double edit_vy(double vy){this->vy = vy;return vy;}
         double edit_vz(double vz){this->vz = vz;return vz;}
         double edit_scale(double scale){this->scale = scale;return scale;}
+        double edit_original_scale(double original_scale){this->original_scale = original_scale; return original_scale;}
 
         //change value
         double increment_x(double delta_x){
@@ -225,9 +241,8 @@ class Line3D : public Objects{
 
 class Obstacle3D : public Objects{
 private:
-    double scale, original_scale = 2;//cooridinate in 3D space
+    //double scale, original_scale = 2;//cooridinate in 3D space
     int segment_number_position;
-    int picture_width = 0, picture_height = 0;
     bool can_collide = 1;
     Obstacle_Type type = cone;
     std::string file_pos;
@@ -272,11 +287,7 @@ public:
         screenY = (int) ((1 - scale*( y - cam->get_y() ))*SCREEN_HEIGHT / 2);
     }
     //get value
-    double get_z(){return segment_number_position*segement_length;}
-    double get_scale(){return scale;}
-    double get_original_scale(){return original_scale;}
-    double get_picture_width(){return picture_width;}
-    double get_picture_height(){return picture_height;}
+    double get_z() override {return segment_number_position*segement_length;}
 
     Obstacle_Type get_obstacle_type(){return type;}
     bool get_can_collide(){return can_collide;}
@@ -285,8 +296,6 @@ public:
     SDL_Texture * get_obstacle_texture(){return obstacle_texture;}
 
     //change value
-    double edit_scale(double scale){this->scale = scale;return scale;}
-    double edit_original_scale(double original_scale){this->original_scale = original_scale; return original_scale;}
     int edit_segment_number_position(int segment_number_position){
         this->segment_number_position = segment_number_position;
         return segment_number_position;
@@ -313,7 +322,7 @@ private:
                 picture_width = 3840, picture_height = 576;
                 break;
             case Seaways_Night:
-                picture_width = SCREEN_WIDTH, picture_height = SCREEN_HEIGHT;
+                picture_width = 5120, picture_height = 720;
                 break;
         };
     }
@@ -414,7 +423,7 @@ class Car3D : public Objects{
         std::string file_pos;
         double shift = 0;
 
-        int z = 1650;
+        //double z = 1650;
 
         SDL_Texture * car_texture;
     public:
@@ -456,7 +465,7 @@ class Car3D : public Objects{
         }
 
         double accelerate(){
-            vz += 5;
+            vz += 1000.0/(pow(vz,0.5)+1000.0/7);
             return vz;
         }
 
@@ -467,12 +476,12 @@ class Car3D : public Objects{
         }
 
         double move_left(){
-            x += (atan(vz/100000)+M_PI/2)*-25;
+            x -= log(vz/1000+1)*60;
             //x += log2(vz+1) * -1;
             return x;
         }
         double move_right(){
-            x += (atan(vz/100000)+M_PI/2)*25;
+            x += log(vz/1000+1)*60;
             //x += log2(vz+1);
             return x;
         }
@@ -500,8 +509,7 @@ class Car3D : public Objects{
 
         void project(Camera3D * cam){
             
-            x+=vx;
-            z+=vz;
+
 
             if(main_car==1){cam->increment_x(vx); cam->increment_z(vz);}
             scale = cam->get_D()/(z-cam->get_z())*0.1;
@@ -513,7 +521,10 @@ class Car3D : public Objects{
         }
 
         void update_position(){
-            
+            vz *= 0.9988;
+            x += vx;
+            z += vz;
+            //
         }
 
         SDL_Texture * get_car_texture(){return car_texture;}
@@ -568,7 +579,7 @@ void draw_cars(SDL_Renderer * renderer,  Camera3D * cam, Car3D * car){
         CarViewport.x = car->get_screenX() - CarViewport.w / 2;
         CarViewport.y = car->get_screenY() - CarViewport.h / 2;
 
-        //std::cout<<CarViewport.w<<' '<<CarViewport.h<<' '<<CarViewport.x<<' '<<CarViewport.y<<'\n';
+        //std::cout<<car->get_z()<<'\n';
 
         SDL_RenderSetViewport( renderer, &CarViewport );
         
@@ -619,14 +630,24 @@ void draw_background(SDL_Renderer * renderer, Background  * background, int shif
             BgsrcViewport.h = 576;
             BgsrcViewport.x = background->get_picture_width()/2 - BgsrcViewport.w / 2 - shift*0.1;
             BgsrcViewport.y = background->get_picture_height()/2 - BgsrcViewport.h / 2;
+            BgdestViewport.w = SCREEN_WIDTH;
+            BgdestViewport.h = SCREEN_HEIGHT/2;
+            BgdestViewport.x = 0;
+            BgdestViewport.y = 0;
+            draw_quad(renderer, 0 , SCREEN_HEIGHT / 2, SCREEN_WIDTH , 0 , SCREEN_HEIGHT , SCREEN_WIDTH , Dusk_bg);
             break;
         case Seaways_Night:
+            BgsrcViewport.w = 1280;
+            BgsrcViewport.h = 720;
+            BgsrcViewport.x = background->get_picture_width()/2 - BgsrcViewport.w / 2 - shift*0.1;
+            BgsrcViewport.y = background->get_picture_height()/2 - BgsrcViewport.h / 2;
+            BgdestViewport.w = SCREEN_WIDTH;
+            BgdestViewport.h = SCREEN_HEIGHT;
+            BgdestViewport.x = 0;
+            BgdestViewport.y = 0;
             break;
     }
-    BgdestViewport.w = SCREEN_WIDTH;
-    BgdestViewport.h = SCREEN_HEIGHT/2;
-    BgdestViewport.x = 0;
-    BgdestViewport.y = 0;
+
 
 
 
@@ -640,7 +661,7 @@ void draw_background(SDL_Renderer * renderer, Background  * background, int shif
         std::cout<<"SDL Error in draw_obstacle : SDL_RenderSetViewport :"<<SDL_GetError();
     }
     
-    draw_quad(renderer, 0 , SCREEN_HEIGHT / 2, SCREEN_WIDTH , 0 , SCREEN_HEIGHT , SCREEN_WIDTH , Dusk_bg);
+
 }
 
 void Car_Obstacle_Collision(Car3D * car, Map * map, int detect_segment_range){
@@ -723,7 +744,6 @@ Uint32 show_time(SDL_Renderer * renderer ,Uint32 start_time, Uint32 curr_time ,b
 void show_percentage( SDL_Renderer * renderer, Map * map ,Car3D * car){
     std::ostringstream stream;
     stream << std::fixed << std::setprecision(2) << car->get_z()/(map->Finish_Line_segement_number*segement_length)*100<<'%';
-    std::cout<<car->get_z()<<' '<<(map->Finish_Line_segement_number*segement_length)<<'\n';
     std::string stringValue = stream.str();
     stringValue = stream.str();
     draw_words(renderer, stringValue , SCREEN_WIDTH*1/10, SCREEN_HEIGHT*9/10);
@@ -857,15 +877,22 @@ void framerate_cap(Uint32 start, int fps){
 
 
 //functions for main 
-void load_game_media(SDL_Renderer * renderer, Map_Type type){
+void load_game_media(SDL_Renderer * renderer, Map_Type type, Difficulty difficulty){
     crash = Mix_LoadWAV("testmusic/crash.wav");
     if(crash==NULL){ std::cout<<"Mix_LoadWav error\n";}
     decelerating = Mix_LoadWAV("testmusic/car_break.wav");
     accelerating = Mix_LoadWAV("testmusic/car_accelerate.wav");
     accelerating_fast = Mix_LoadWAV("testmusic/car_accelerate_fast.wav");
+    music = Mix_LoadMUS(Music_File_Location[(int)(type)*3+(int)difficulty].c_str());
+/*
     switch(type){
         case Seaways_Noon:
-            music = Mix_LoadMUS(Music_File_Location[Deja_Vu].c_str());
+            switch(difficulty){
+                case Easy:
+
+                case Medium:
+                case Hard:
+            };
             break;
         case Seaways_Dusk:
             music = Mix_LoadMUS(Music_File_Location[Forever_Young].c_str());
@@ -874,7 +901,7 @@ void load_game_media(SDL_Renderer * renderer, Map_Type type){
             music = Mix_LoadMUS(Music_File_Location[Tokyo_Drift].c_str());
             break;
     };
-    
+*/    
     if(music==NULL){ std::cout<<"Mix_LoadMUS error : "<<Mix_GetError()<<'\n';}
 
     //load texture for car and obstacle
