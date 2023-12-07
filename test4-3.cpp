@@ -53,7 +53,7 @@ SDL_Color Light_Green= {.r = 0, .g = 255, .b = 0, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Dark_Road= {.r = 100, .g = 100, .b = 100, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Light_Road= {.r = 105, .g = 105, .b = 105, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Blue_Sky= {.r = 53, .g = 81, .b = 92, .a = SDL_ALPHA_OPAQUE};
-SDL_Color Water= {.r = 15, .g = 94, .b = 156, .a = SDL_ALPHA_OPAQUE};
+SDL_Color Water= {.r = 127, .g = 147, .b = 218, .a = SDL_ALPHA_OPAQUE};
 SDL_Color Dusk_bg = {.r = 34 , .g = 22 , .b = 42 , .a = SDL_ALPHA_OPAQUE};
 
 const int Num_Of_Cars = 2;
@@ -80,7 +80,7 @@ const int Num_of_Difficulty = 3;
 enum Difficulty{
     Easy, Medium, Hard
 };
-std::string Background_File_locations[Num_Of_Maps] = {"test_race_img/dusk.png","test_race_img/dusk4_edited2.png","test_race_img/night.png"};
+std::string Background_File_locations[Num_Of_Maps] = {"test_race_img/noon_edited.png","test_race_img/dusk4_edited2.png","test_race_img/night3_edited.png"};
 SDL_Texture * Background_Texture;
 
 const int Num_of_Musics = 9;
@@ -115,6 +115,7 @@ enum Car_Status{
 //Rendered texture
 LTexture  gTextTexture;
 
+void draw_quad(SDL_Renderer * renderer, int x1, int y1, int w1, int x2, int y2, int w2, SDL_Color color);
 
 SDL_Texture* loadTexture( SDL_Renderer * renderer, std::string path )
 {
@@ -148,8 +149,8 @@ class Objects{
         double x,y,z,vx,vy,vz,scale,original_scale;
         int screenX, screenY, picture_width, picture_height;
     public:
-        Objects():x(0), y(0), z(1650), vx(0), vy(0), vz(0), scale(0), original_scale(2),screenX(0), screenY(0), picture_width(0), picture_height(0){}
-        Objects(double new_z):x(0), y(0), z(new_z), vx(0), vy(0), vz(0), scale(0), original_scale(2),screenX(0), screenY(0), picture_width(0), picture_height(0){}
+        Objects():x(0), y(0), z(0), vx(0), vy(0), vz(0), scale(0), original_scale(2),screenX(0), screenY(0), picture_width(0), picture_height(0){}
+        Objects(int new_z,double org_scale):x(0), y(0), z(new_z), vx(0), vy(0), vz(0), scale(0), original_scale(org_scale),screenX(0), screenY(0), picture_width(0), picture_height(0){}
 
         //get values
         double get_x(){return x;}
@@ -309,32 +310,88 @@ class Finish_Line3D : public Obstacle3D{
 };
 
 class Background{
-private:
+protected:
     int picture_width, picture_height;
+    double shift;
     std::string file_pos;
     Map_Type type;
-
-    void resolve_file_attributes(){
-        switch(type){
-            case Seaways_Noon:
-                picture_width = SCREEN_WIDTH, picture_height = SCREEN_HEIGHT;
-                break;
-            case Seaways_Dusk:
-                picture_width = 3840, picture_height = 576;
-                break;
-            case Seaways_Night:
-                picture_width = 5120, picture_height = 720;
-                break;
-        };
-    }
+    SDL_Rect BgsrcViewport;
+    SDL_Rect BgdestViewport;
 public:
-    Background(Map_Type type){
-        this->type = type;
-        resolve_file_attributes();
+    Background(int width, int height, Map_Type tp, std::string pos):picture_width(width),picture_height(height),shift(0),type(tp), file_pos(pos){
+        BgsrcViewport.w = 0;
+        BgsrcViewport.h = 0;
+        BgsrcViewport.x = 0;
+        BgsrcViewport.y = 0;
     }
     int get_picture_width(){return picture_width;}
     int get_picture_height(){return picture_height;}
     Map_Type get_type(){return type;}
+
+    virtual void draw_background_color(SDL_Renderer * renderer){};
+
+    void draw_background(SDL_Renderer * renderer){
+
+        draw_background_color(renderer);
+
+        if(SDL_RenderSetViewport( renderer, &BgdestViewport ) != 0){
+            std::cout<<"SDL Error in draw_background : SDL_RenderSetViewport : "<<SDL_GetError()<<'\n';
+        }
+        if(SDL_RenderCopy( renderer, Background_Texture, &BgsrcViewport, &BgdestViewport ) != 0){
+            std::cout<<"SDL Error in draw_background : SDL_RenderCopy :"<<SDL_GetError()<<'\n';
+        }
+        if(SDL_RenderSetViewport( renderer, NULL ) != 0){
+            std::cout<<"SDL Error in draw_background : SDL_RenderSetViewport :"<<SDL_GetError()<<'\n';
+        }
+    }
+};
+
+class Background_Noon : public Background{
+    private:
+        void draw_background_color(SDL_Renderer * renderer) override {
+            draw_quad(renderer, 0 , SCREEN_HEIGHT / 2, SCREEN_WIDTH , 0 , SCREEN_HEIGHT , SCREEN_WIDTH , Water);
+        }
+    public:
+        Background_Noon():Background(1920,470,Seaways_Noon,Background_File_locations[(int)Seaways_Noon]){
+            BgsrcViewport.w = 1671;
+            BgsrcViewport.h = 470;
+            BgsrcViewport.x = picture_width/2 - BgsrcViewport.w / 2 - shift*0.1;
+            BgsrcViewport.y = picture_height/2 - BgsrcViewport.h / 2;
+            BgdestViewport.w = SCREEN_WIDTH;
+            BgdestViewport.h = SCREEN_HEIGHT/2;
+            BgdestViewport.x = 0;
+            BgdestViewport.y = 0;
+        }
+};
+class Background_Dusk : public Background{
+        void draw_background_color(SDL_Renderer * renderer) override {
+            draw_quad(renderer, 0 , SCREEN_HEIGHT / 2, SCREEN_WIDTH , 0 , SCREEN_HEIGHT , SCREEN_WIDTH , Dusk_bg);
+        }
+
+    public:
+        Background_Dusk():Background(3840,576,Seaways_Dusk,Background_File_locations[(int)Seaways_Dusk]){
+            BgsrcViewport.w = 2048;
+            BgsrcViewport.h = 576;
+            BgsrcViewport.x = picture_width/2 - BgsrcViewport.w / 2 - shift*0.1;
+            BgsrcViewport.y = picture_height/2 - BgsrcViewport.h / 2;
+            BgdestViewport.w = SCREEN_WIDTH;
+            BgdestViewport.h = SCREEN_HEIGHT/2;
+            BgdestViewport.x = 0;
+            BgdestViewport.y = 0;
+        }
+};
+class Background_Night : public Background{
+    public:
+        Background_Night():Background(2880,720,Seaways_Night,Background_File_locations[(int)Seaways_Night]){
+            BgsrcViewport.w = 1280;
+            BgsrcViewport.h = 720;
+            BgsrcViewport.x = picture_width/2 - BgsrcViewport.w / 2 - shift*0.1;
+            BgsrcViewport.y = picture_height/2 - BgsrcViewport.h / 2;
+            BgdestViewport.w = SCREEN_WIDTH;
+            BgdestViewport.h = SCREEN_HEIGHT/2;
+            BgdestViewport.x = 0;
+            BgdestViewport.y = 0;
+        }
 };
 
 struct Obstacle_build{
@@ -359,7 +416,18 @@ public :
         lines = new Line3D[Line_number];
         Obstacles = new Obstacle3D[Obstacle_number];
         Obstacles_Location = new int[Line_number];
-        background = new Background(type);
+        switch(type){
+            case Seaways_Noon:
+                background = new Background_Noon();
+                break;
+            case Seaways_Dusk:
+                background = new Background_Dusk();
+                break;
+            case Seaways_Night:
+                background = new Background_Night();
+                break;
+        }
+        
 
         for(int i = 0 ; i < Line_number ; i++){
             lines[i].edit_z( segement_length*i);
@@ -419,23 +487,23 @@ class Car3D : public Objects{
     private:
         bool main_car;
         Car_Status car_status = Intact;
-        double original_scale = 3;
+        
         Car_Type type;
         std::string file_pos;
         double shift = 0;
 
-        //double z = 1650;
+       
 
         SDL_Texture * car_texture;
     public:
-        Car3D():Objects(){
+        Car3D():Objects(1650,3){
         }
 
-        Car3D(Car_Type type , bool main_car):Objects(){
+        Car3D(Car_Type type , bool main_car):Objects(1650,3){
             this->type = type, this->main_car = main_car;
             resolve_file_attributes();
         }        
-        Car3D(double x, double y, double z, double vx,double vz, Car_Type type,  double original_scale,  bool main_car):Objects(){
+        Car3D(double x, double y, double z, double vx,double vz, Car_Type type,  double original_scale,  bool main_car):Objects(1650,3){
             this->x=x, this->y=y, this->z=z,  this->vx=vx, this->vz=vz, this->type = type,this->original_scale = original_scale, this->main_car = main_car;
             resolve_file_attributes();
         }
@@ -614,7 +682,7 @@ void draw_obstacle(SDL_Renderer * renderer, Obstacle3D * obstacle ){
          
     
 }
-
+/*
 void draw_background(SDL_Renderer * renderer, Background  * background, int shift){
     SDL_Rect BgsrcViewport;
     SDL_Rect BgdestViewport;
@@ -622,9 +690,18 @@ void draw_background(SDL_Renderer * renderer, Background  * background, int shif
     BgsrcViewport.h = 0;
     BgsrcViewport.x = 0;
     BgsrcViewport.y = 0;
-    
     switch( background->get_type() ){
         case Seaways_Noon:
+            BgsrcViewport.w = 1671;
+            BgsrcViewport.h = 470;
+            BgsrcViewport.x = background->get_picture_width()/2 - BgsrcViewport.w / 2 - shift*0.1;
+            BgsrcViewport.y = background->get_picture_height()/2 - BgsrcViewport.h / 2;
+            BgdestViewport.w = SCREEN_WIDTH;
+            BgdestViewport.h = SCREEN_HEIGHT/2;
+            BgdestViewport.x = 0;
+            BgdestViewport.y = 0;
+            draw_quad(renderer, 0 , SCREEN_HEIGHT / 2, SCREEN_WIDTH , 0 , SCREEN_HEIGHT , SCREEN_WIDTH , Water);
+            break;
             break;
         case Seaways_Dusk:
             BgsrcViewport.w = 2048;
@@ -643,7 +720,7 @@ void draw_background(SDL_Renderer * renderer, Background  * background, int shif
             BgsrcViewport.x = background->get_picture_width()/2 - BgsrcViewport.w / 2 - shift*0.1;
             BgsrcViewport.y = background->get_picture_height()/2 - BgsrcViewport.h / 2;
             BgdestViewport.w = SCREEN_WIDTH;
-            BgdestViewport.h = SCREEN_HEIGHT;
+            BgdestViewport.h = SCREEN_HEIGHT/2;
             BgdestViewport.x = 0;
             BgdestViewport.y = 0;
             break;
@@ -652,22 +729,13 @@ void draw_background(SDL_Renderer * renderer, Background  * background, int shif
 
 
 
-    if(SDL_RenderSetViewport( renderer, &BgdestViewport ) != 0){
-        std::cout<<"SDL Error in draw_obstacle : SDL_RenderSetViewport : "<<SDL_GetError();
-    }
-    if(SDL_RenderCopy( renderer, Background_Texture, &BgsrcViewport, &BgdestViewport ) != 0){
-        std::cout<<"SDL Error in draw_obstacle : SDL_RenderCopy :"<<SDL_GetError();
-    }
-    if(SDL_RenderSetViewport( renderer, NULL ) != 0){
-        std::cout<<"SDL Error in draw_obstacle : SDL_RenderSetViewport :"<<SDL_GetError();
-    }
     
 
 }
-
+*/
 void Car_Obstacle_Collision(Car3D * car, Map * map, int detect_segment_range){
 
-    double distance_x = 400, distance_z = 1500, shift_z = -10 * segement_length ; // somehow the z coordinate of obstacle is delayed 10 segment_length
+    double distance_x = 300, distance_z = 1500, shift_z = -10 * segement_length ; // somehow the z coordinate of obstacle is delayed 10 segment_length
     int start_pos = car->get_z()/segement_length;
     int * obstacles_location = map->get_obstacles_location();
     for(int i = start_pos ; i < start_pos + detect_segment_range ; i++){
@@ -707,7 +775,7 @@ void Fell_into_Ocean(Car3D * car, Map * map){
     }
 }
 
-void draw_words(SDL_Renderer * renderer, std::string ss, int screenx, int screeny){
+void draw_words(SDL_Renderer * renderer, std::string ss, int screenx, int screeny, int font_size){
     gFont = TTF_OpenFont( "ttf_fonts/ark-pixel-10px-monospaced-zh_tw.ttf", 10 );
     if( gFont == NULL )
     {
@@ -716,14 +784,17 @@ void draw_words(SDL_Renderer * renderer, std::string ss, int screenx, int screen
     else
     {
         //Render text
-        SDL_Color textColor = { 0, 0, 0 };
+        SDL_Color ForegorundtextColor = { 255, 255, 255 };
+        SDL_Color BackgorundtextColor = { 0, 0, 0 };
         TTF_SetFontSize(gFont, 50);
-        if( !gTextTexture.loadFromRenderedText( ss, textColor , renderer, gFont) )
+        if( !gTextTexture.loadFromRenderedText( ss, ForegorundtextColor , renderer, gFont) )
         {
             printf( "Failed to render text texture!\n" );
         }
+        gTextTexture.render(( screenx - gTextTexture.getWidth()/ 2  ) , ( screeny - gTextTexture.getHeight()/ 2  ) , renderer );
+
     }
-    gTextTexture.render(( screenx - gTextTexture.getWidth()/ 2  ) , ( screeny - gTextTexture.getHeight()/ 2  ) , renderer );
+
     gTextTexture.free();
 }
 
@@ -736,7 +807,7 @@ Uint32 show_time(SDL_Renderer * renderer ,Uint32 start_time, Uint32 curr_time ,b
     stream << std::fixed << std::setprecision(3) << (double)elapsed_time/1000 <<"s";
     std::string stringValue = stream.str();
     stringValue = stream.str();
-    draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*1/10);
+    draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*1/10,50);
     stream.str("");
     stream.clear();
     return elapsed_time;
@@ -747,7 +818,7 @@ void show_percentage( SDL_Renderer * renderer, Map * map ,Car3D * car){
     stream << std::fixed << std::setprecision(2) << car->get_z()/(map->Finish_Line_segement_number*segement_length)*100<<'%';
     std::string stringValue = stream.str();
     stringValue = stream.str();
-    draw_words(renderer, stringValue , SCREEN_WIDTH*1/10, SCREEN_HEIGHT*9/10);
+    draw_words(renderer, stringValue , SCREEN_WIDTH*1/10, SCREEN_HEIGHT*9/10,50);
     stream.str("");
     stream.clear();
 }
@@ -756,7 +827,7 @@ void show_speed(SDL_Renderer * renderer, Car3D * car){
     std::ostringstream stream;
     stream << std::fixed << std::setprecision(2) << car->get_vz() / 20 <<"km/hr";
     std::string stringValue = stream.str();
-    draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*9/10);
+    draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*9/10,50);
     stream.str("");
     stream.clear();
 }
@@ -772,7 +843,7 @@ void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, Car3D * car,
     SDL_Rect ObstacleViewport;
 
     //draw background
-    draw_background(renderer, map->get_background(), car->get_shift());
+    map->get_background()->draw_background(renderer);
 
     //draw_quad(renderer, SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2, Blue_Sky); 
 
@@ -820,8 +891,8 @@ void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, Car3D * car,
         //draw road segment line
         if((i/3)%6 < 3){
             draw_quad(renderer, prev_line->get_screenX(), prev_line->get_screenY(), prev_line->get_width()/32 , curr_line->get_screenX() ,curr_line->get_screenY(), curr_line->get_width()/32 , White);
-            draw_quad(renderer, prev_line->get_screenX(), prev_line->get_screenY(), prev_line->get_width()/32 , curr_line->get_screenX() ,curr_line->get_screenY(), curr_line->get_width()/32 , White);
-            draw_quad(renderer, prev_line->get_screenX(), prev_line->get_screenY(), prev_line->get_width()/32 , curr_line->get_screenX() ,curr_line->get_screenY(), curr_line->get_width()/32 , White);
+            //draw_quad(renderer, prev_line->get_screenX(), prev_line->get_screenY(), prev_line->get_width()/32 , curr_line->get_screenX() ,curr_line->get_screenY(), curr_line->get_width()/32 , White);
+            //draw_quad(renderer, prev_line->get_screenX(), prev_line->get_screenY(), prev_line->get_width()/32 , curr_line->get_screenX() ,curr_line->get_screenY(), curr_line->get_width()/32 , White);
         }          
         //draw finish line
         

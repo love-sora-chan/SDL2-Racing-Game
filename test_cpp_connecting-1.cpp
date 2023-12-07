@@ -262,11 +262,28 @@ int WinMain(int argc,char *argv[]){
 						Uint32 elapsed_time = 0;
 						if(in_play==0){
 							SDL_RenderClear(gRenderer);
-							load_game_media(gRenderer,Seaways_Dusk,Easy);
-							create_map(Seaways_Dusk,Easy,map);
+							load_game_media(gRenderer,Seaways_Dusk,Hard);
+							create_map(Seaways_Dusk,Hard,map);
 							create_car();
 							create_camera();
 							in_play = 1;
+							map->get_background()->draw_background(gRenderer);
+							SDL_RenderPresent(gRenderer);
+						}
+
+						while(!quit){
+							while(SDL_PollEvent( &e )){
+								if( e.type == SDL_QUIT ){
+									quit = true;
+								}
+							}
+							if(keyarr[SDL_SCANCODE_UP]){break;}
+							//draw_quad(gRenderer,SCREEN_WIDTH/2,0,SCREEN_WIDTH/2,SCREEN_WIDTH/2,SCREEN_HEIGHT,SCREEN_WIDTH/2,Black);
+							std::string tutorial1 = "Arrow Key ↑ Accelerates / ↓ Decelerates";
+							std::string tutorial2 = "Arrow Key ↑ Accelerates / ↓ Decelerates HOLD Arrow Key UP To Start";
+							draw_words(gRenderer,tutorial1,SCREEN_WIDTH/2,SCREEN_HEIGHT/3,70);
+							draw_words(gRenderer,tutorial2,SCREEN_WIDTH/2,SCREEN_HEIGHT/3 * 2,70);
+							//SDL_Delay(50);
 						}
 
 						while( !quit && in_play == 1){
@@ -276,11 +293,10 @@ int WinMain(int argc,char *argv[]){
 									if( e.type == SDL_QUIT ){
 										quit = true;
 									}
+
 							}
-							if(keyarr[SDL_SCANCODE_LEFT])
-								car_main->move_left();
-							if(keyarr[SDL_SCANCODE_RIGHT])
-								car_main->move_right();
+							if(keyarr[SDL_SCANCODE_LEFT]){car_main->move_left();}
+							if(keyarr[SDL_SCANCODE_RIGHT]){car_main->move_right();}
 							if(keyarr[SDL_SCANCODE_UP]){
 								car_main->accelerate();
 								if(game_started==0){
@@ -335,6 +351,7 @@ int WinMain(int argc,char *argv[]){
 							//draw cars, main car
 							draw_cars(gRenderer, cam , car_main);
 							SDL_RenderPresent(gRenderer);
+							SDL_RenderClear(gRenderer);
 
 							//Check collision between obstacle and car
 							Car_Obstacle_Collision(car_main,map,30);
@@ -342,8 +359,20 @@ int WinMain(int argc,char *argv[]){
 							//check if fell into ocean
 							Fell_into_Ocean(car_main, map);
 
+							//check if pressed esc
+							if(keyarr[SDL_SCANCODE_ESCAPE]){
+								Mix_HaltMusic();
+								Mix_HaltChannel(-1);
+								close_game();
+								STATUS = Home_page;
+								in_play = 0;
+								Transition(gRenderer);
+								main_menu.Initialize(main_menu,gRenderer);
+								main_menu.choosing(main_menu.opt,main_menu,gRenderer);
+								main_menu.appear(main_menu,gRenderer);	
+							}
 							//check if passed finish line
-							if(Reach_Finish(car_main, map)){
+							else if(Reach_Finish(car_main, map)){
 								//Mix_HaltMusic();
 								Mix_FadeOutMusic(0);
 								Mix_HaltChannel(-1);
