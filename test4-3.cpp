@@ -80,7 +80,7 @@ const int Num_of_Difficulty = 3;
 enum Difficulty{
     Easy, Medium, Hard
 };
-std::string Background_File_locations[Num_Of_Maps] = {"test_race_img/noon_edited.png","test_race_img/dusk4_edited2.png","test_race_img/night3_edited.png"};
+std::string Background_File_locations[Num_Of_Maps] = {"test_race_img/noon_edited.png","test_race_img/dusk4_edited2.png","test_race_img/night.png"};
 SDL_Texture * Background_Texture;
 
 const int Num_of_Musics = 9;
@@ -330,7 +330,9 @@ public:
 
     virtual void draw_background_color(SDL_Renderer * renderer){};
 
-    void draw_background(SDL_Renderer * renderer){
+    void draw_background(SDL_Renderer * renderer,double shift){
+
+        BgsrcViewport.x = picture_width/2 - BgsrcViewport.w / 2 - shift*0.1;
 
         draw_background_color(renderer);
 
@@ -388,7 +390,7 @@ class Background_Night : public Background{
             BgsrcViewport.x = picture_width/2 - BgsrcViewport.w / 2 - shift*0.1;
             BgsrcViewport.y = picture_height/2 - BgsrcViewport.h / 2;
             BgdestViewport.w = SCREEN_WIDTH;
-            BgdestViewport.h = SCREEN_HEIGHT/2;
+            BgdestViewport.h = SCREEN_HEIGHT;
             BgdestViewport.x = 0;
             BgdestViewport.y = 0;
         }
@@ -843,7 +845,7 @@ void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, Car3D * car,
     SDL_Rect ObstacleViewport;
 
     //draw background
-    map->get_background()->draw_background(renderer);
+    map->get_background()->draw_background(renderer,car->get_shift());
 
     //draw_quad(renderer, SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2, Blue_Sky); 
 

@@ -267,10 +267,8 @@ int WinMain(int argc,char *argv[]){
 							create_car();
 							create_camera();
 							in_play = 1;
-							map->get_background()->draw_background(gRenderer);
-							SDL_RenderPresent(gRenderer);
 						}
-
+/*
 						while(!quit){
 							while(SDL_PollEvent( &e )){
 								if( e.type == SDL_QUIT ){
@@ -285,7 +283,7 @@ int WinMain(int argc,char *argv[]){
 							draw_words(gRenderer,tutorial2,SCREEN_WIDTH/2,SCREEN_HEIGHT/3 * 2,70);
 							//SDL_Delay(50);
 						}
-
+*/
 						while( !quit && in_play == 1){
 							//calculate time
 							Uint32 time_start = SDL_GetTicks();
