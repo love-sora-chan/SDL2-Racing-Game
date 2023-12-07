@@ -261,8 +261,9 @@ int WinMain(int argc,char *argv[]){
 						
 						Uint32 elapsed_time = 0;
 						if(in_play==0){
-							load_game_media(gRenderer,Seaways_Night,Hard);
-							create_map(Seaways_Night,Easy,map);
+							SDL_RenderClear(gRenderer);
+							load_game_media(gRenderer,Seaways_Dusk,Easy);
+							create_map(Seaways_Dusk,Easy,map);
 							create_car();
 							create_camera();
 							in_play = 1;
@@ -320,7 +321,8 @@ int WinMain(int argc,char *argv[]){
 							//update car position
 							car_main->update_position();
 							//Draw Scene
-							draw_scene(gRenderer, map, cam ,car_main, 300);
+							
+							draw_scene(gRenderer, map, cam ,car_main, 400);
 
 							//draw speed
 							show_speed(gRenderer, car_main);

@@ -303,6 +303,13 @@ public:
     }
 };
 
+class Cone3D : public Obstacle3D{
+    Cone3D():Obstacle3D(){}
+};
+class Rock3D : public Obstacle3D{
+    Rock3D():Obstacle3D(){}
+};
+
 class Finish_Line3D : public Obstacle3D{
     public:
         Finish_Line3D(): Obstacle3D(){}
