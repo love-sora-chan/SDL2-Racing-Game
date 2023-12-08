@@ -44,7 +44,7 @@ class MENU{
 };
 void MENU::Initialize(MENU &m,SDL_Renderer* REND){
 	m.opt = 1;m.options = 3;
-	m.background.loadFromFile("testimage/main_menu.png",REND);
+	m.background.loadFromFile("image/menu/main_menu.png",REND);
     m.background.setAlpha(128);
 }
 
@@ -69,21 +69,21 @@ void MENU::UP_opt(MENU &m){
 void MENU::choosing(int opt,MENU &m,SDL_Renderer* REND){
 	switch(opt){
 		case 1:{
-			m.start_button.loadFromFile("testimage/start_chosen.png",REND);
-			m.record_button.loadFromFile("testimage/record_unchosen.png",REND);
-            m.quit_button.loadFromFile("testimage/quit_unchosen.png",REND);
+			m.start_button.loadFromFile("image/menu/start_chosen.png",REND);
+			m.record_button.loadFromFile("image/menu/record_unchosen.png",REND);
+            m.quit_button.loadFromFile("image/menu/quit_unchosen.png",REND);
 			break;
 		}
 		case 2:{
-			m.start_button.loadFromFile("testimage/start_unchosen.png",REND);
-			m.record_button.loadFromFile("testimage/record_chosen.png",REND);
-            m.quit_button.loadFromFile("testimage/quit_unchosen.png",REND);
+			m.start_button.loadFromFile("image/menu/start_unchosen.png",REND);
+			m.record_button.loadFromFile("image/menu/record_chosen.png",REND);
+            m.quit_button.loadFromFile("image/menu/quit_unchosen.png",REND);
 			break;
 		}
         case 3:{
-            m.start_button.loadFromFile("testimage/start_unchosen.png",REND);
-			m.record_button.loadFromFile("testimage/record_unchosen.png",REND);
-            m.quit_button.loadFromFile("testimage/quit_chosen.png",REND);
+            m.start_button.loadFromFile("image/menu/start_unchosen.png",REND);
+			m.record_button.loadFromFile("image/menu/record_unchosen.png",REND);
+            m.quit_button.loadFromFile("image/menu/quit_chosen.png",REND);
             break;
         }
 	}

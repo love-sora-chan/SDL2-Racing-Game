@@ -35,7 +35,7 @@ public:
 };
 
 void INP::Initialize(INP &i,SDL_Renderer* REND){
-    i.background.loadFromFile("testimage/name_insert.png",REND);
+    i.background.loadFromFile("image/menu/name_insert.png",REND);
     i.background.render(0,0,SCREEN_WIDTH,SCREEN_HEIGHT,REND);
     SDL_RenderPresent(REND);
     name = "";
@@ -43,7 +43,7 @@ void INP::Initialize(INP &i,SDL_Renderer* REND){
 
 void INP::handle_input(INP &i,SDL_Renderer* REND,SDL_Event e){
     show_centered(i,REND);
-    _button = Mix_LoadWAV("testmusic/change_button.wav");
+    _button = Mix_LoadWAV("audio/change_button.wav");
         if(e.type==SDL_KEYDOWN){
             std::string temp = i.name;
             if(e.key.keysym.sym == SDLK_BACKSPACE && name.length()!=0)

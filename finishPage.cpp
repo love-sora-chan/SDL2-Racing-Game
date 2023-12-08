@@ -21,11 +21,10 @@ public:
     int finishWay;
     LTexture background,notification;
 
-    const char src[3][40]={"testimage/finish.png","testimage/fail_fallen.png","testimage/fail_crush.png"};
+    const char src[3][40]={"image/menu/finish.png","image/menu/fail_fallen.png","image/menu/fail_crush.png"};
 
     void Initialize(SDL_Renderer* REND){
-        background.loadFromFile("testimage/black.png",REND);
-        usedTime=0;finishWay=0;
+        background.loadFromFile("image/menu/black.png",REND);
     }
 
     void show(finishPage &f, SDL_Renderer* REND, TTF_Font* Font,int way);
@@ -68,6 +67,7 @@ void finishPage::show(finishPage &f, SDL_Renderer* REND, TTF_Font* Font,int way)
             f.notification.loadFromRenderedText("Maybe next time ?",White,REND,Font);
             f.notification.render(SCREEN_WIDTH*0.15,SCREEN_HEIGHT*0.75,SCREEN_WIDTH*0.7,SCREEN_HEIGHT/4,REND);
             SDL_RenderPresent(REND);
+            break;
         }
         case 2:{
             Font = TTF_OpenFont("test_ttf/SegUIVar.ttf",22);
@@ -79,6 +79,7 @@ void finishPage::show(finishPage &f, SDL_Renderer* REND, TTF_Font* Font,int way)
             f.notification.loadFromRenderedText("Maybe next time ?",White,REND,Font);
             f.notification.render(SCREEN_WIDTH*0.15,SCREEN_HEIGHT*0.75,SCREEN_WIDTH*0.7,SCREEN_HEIGHT/4,REND);
             SDL_RenderPresent(REND);
+            break;
         }
     }
     
