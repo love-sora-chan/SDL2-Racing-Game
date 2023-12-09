@@ -10,6 +10,7 @@
 extern SDL_Color White;
 extern const int SCREEN_WIDTH ;
 extern const int SCREEN_HEIGHT ;
+extern Mix_Chunk* buttonSound;
 
 #ifndef RECORD_PAGE_cpp
 #define RECORD_PAGE_cpp
@@ -77,6 +78,7 @@ void RecordPage::read(RecordPage &rp){
 
 void RecordPage::UP_DOWN_opt(RecordPage &rp){
 	rp.bar_opt++;rp.bar_opt = rp.bar_opt%2;
+    Mix_PlayChannel(-1,buttonSound,0);
 }
 void RecordPage::left_opt(RecordPage &rp){
     if(rp.bar_opt==0){
@@ -87,10 +89,12 @@ void RecordPage::left_opt(RecordPage &rp){
         if(rp.diffculty_option==0)  rp.diffculty_option = 2;
         else    diffculty_option--;
     }
+    Mix_PlayChannel(-1,buttonSound,0);
 }
 void RecordPage::right_opt(RecordPage &rp){
     if(rp.bar_opt==0){rp.map_option++;rp.map_option = rp.map_option%3;}
-    else    {rp.diffculty_option++;rp.diffculty_option = rp.diffculty_option%3;} 
+    else    {rp.diffculty_option++;rp.diffculty_option = rp.diffculty_option%3;}
+    Mix_PlayChannel(-1,buttonSound,0);
 }
 
 void RecordPage::mapchange(RecordPage &rp,SDL_Renderer* REND){

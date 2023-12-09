@@ -17,7 +17,7 @@ extern const int SCREEN_HEIGHT ;
 #ifndef NAME_INSERT_cpp
 #define NAME_INSERT_cpp
 
-Mix_Chunk* _button = NULL;
+extern Mix_Chunk* textsound;
 
 
 class INP{
@@ -43,7 +43,6 @@ void INP::Initialize(INP &i,SDL_Renderer* REND){
 
 void INP::handle_input(INP &i,SDL_Renderer* REND,SDL_Event e){
     show_centered(i,REND);
-    _button = Mix_LoadWAV("audio/change_button.wav");
         if(e.type==SDL_KEYDOWN){
             std::string temp = i.name;
             if(e.key.keysym.sym == SDLK_BACKSPACE && name.length()!=0)
@@ -54,7 +53,7 @@ void INP::handle_input(INP &i,SDL_Renderer* REND,SDL_Event e){
                 else if((int)e.key.keysym.sym>=97&&(int)e.key.keysym.sym<=122)
                     i.name += (char)((int)e.key.keysym.sym);
             }
-            Mix_PlayChannel(-1,_button,0);
+            Mix_PlayChannel(-1,textsound,0);
         }
 }
 

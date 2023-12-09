@@ -17,6 +17,7 @@ class MENU{
 	private:
 		int options=3;
 		LTexture background;
+        bool playMusic = true;
 
         //options
         LTexture start_button,record_button,quit_button;
@@ -40,10 +41,14 @@ class MENU{
 		void vanish(MENU &m,SDL_Renderer* REND,int spd );
 		void appear(MENU &m,SDL_Renderer* REND,int spd );
 
+        bool PlayMusic(){return playMusic;}
+        void setPlayMusic(bool play){playMusic = play;}
+
 		
 };
 void MENU::Initialize(MENU &m,SDL_Renderer* REND){
-	m.opt = 1;m.options = 3;
+	playMusic = true;
+    m.opt = 1;m.options = 3;
 	m.background.loadFromFile("image/menu/main_menu.png",REND);
     m.background.setAlpha(128);
 }
@@ -112,7 +117,6 @@ void MENU::vanish(MENU &m,SDL_Renderer* REND,int spd = 5){
         m.quit_button.setAlpha(i);
 		m.show(m,REND);
 	}
-	
 }
 
 

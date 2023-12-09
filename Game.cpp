@@ -98,7 +98,7 @@ enum Music_type {
 std::string Music_File_Location[Num_of_Musics] = {
     "audio/Deja_Vu_fixed.mp3",
     "audio/Forever Young - Symbol.mp3",
-    "audio/DONT STOP THE MUSIC,mp3",
+    "audio/DONT STOP THE MUSIC.mp3",
     "audio/Grand Prix.mp3",
     "audio/Together Forever.mp3",
     "audio/Night Of Fire.mp3",
@@ -716,57 +716,7 @@ void draw_obstacle(SDL_Renderer * renderer, Obstacle3D * obstacle ){
          
     
 }
-/*
-void draw_background(SDL_Renderer * renderer, Background  * background, int shift){
-    SDL_Rect BgsrcViewport;
-    SDL_Rect BgdestViewport;
-    BgsrcViewport.w = 0;
-    BgsrcViewport.h = 0;
-    BgsrcViewport.x = 0;
-    BgsrcViewport.y = 0;
-    switch( background->get_type() ){
-        case Seaways_Noon:
-            BgsrcViewport.w = 1671;
-            BgsrcViewport.h = 470;
-            BgsrcViewport.x = background->get_picture_width()/2 - BgsrcViewport.w / 2 - shift*0.1;
-            BgsrcViewport.y = background->get_picture_height()/2 - BgsrcViewport.h / 2;
-            BgdestViewport.w = SCREEN_WIDTH;
-            BgdestViewport.h = SCREEN_HEIGHT/2;
-            BgdestViewport.x = 0;
-            BgdestViewport.y = 0;
-            draw_quad(renderer, 0 , SCREEN_HEIGHT / 2, SCREEN_WIDTH , 0 , SCREEN_HEIGHT , SCREEN_WIDTH , Water);
-            break;
-            break;
-        case Seaways_Dusk:
-            BgsrcViewport.w = 2048;
-            BgsrcViewport.h = 576;
-            BgsrcViewport.x = background->get_picture_width()/2 - BgsrcViewport.w / 2 - shift*0.1;
-            BgsrcViewport.y = background->get_picture_height()/2 - BgsrcViewport.h / 2;
-            BgdestViewport.w = SCREEN_WIDTH;
-            BgdestViewport.h = SCREEN_HEIGHT/2;
-            BgdestViewport.x = 0;
-            BgdestViewport.y = 0;
-            draw_quad(renderer, 0 , SCREEN_HEIGHT / 2, SCREEN_WIDTH , 0 , SCREEN_HEIGHT , SCREEN_WIDTH , Dusk_bg);
-            break;
-        case Seaways_Night:
-            BgsrcViewport.w = 1280;
-            BgsrcViewport.h = 720;
-            BgsrcViewport.x = background->get_picture_width()/2 - BgsrcViewport.w / 2 - shift*0.1;
-            BgsrcViewport.y = background->get_picture_height()/2 - BgsrcViewport.h / 2;
-            BgdestViewport.w = SCREEN_WIDTH;
-            BgdestViewport.h = SCREEN_HEIGHT/2;
-            BgdestViewport.x = 0;
-            BgdestViewport.y = 0;
-            break;
-    }
 
-
-
-
-    
-
-}
-*/
 void Car_Obstacle_Collision(Car3D * car, Map * map, int detect_segment_range){
 
     double distance_x = 300, distance_z = 1500;
@@ -1037,17 +987,17 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
             density = 75;
             break;
         case Medium:
-            density = 50;
+            density = 60;
             break;
         case Hard:
-            density = 25;
+            density = 40;
             break;
     }
     switch(type){
         case Seaways_Noon:
         {
-            total_segment_length = 6000,finish_line_segment_length = 5000;
-            int Node_number = 11;
+            total_segment_length = 12000,finish_line_segment_length = 10000;
+            int Node_number = 15;
             std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
             Nodes[0] = std::make_pair( std::make_pair(100,300) , 0.2 );
             Nodes[1] = std::make_pair( std::make_pair(500,1000) , -0.5 );
@@ -1059,7 +1009,12 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
             Nodes[7] = std::make_pair( std::make_pair(3300,3400) , 1.2 );
             Nodes[8] = std::make_pair( std::make_pair(3500,3700) , -1.2 );
             Nodes[9] = std::make_pair( std::make_pair(3800,3900) , 1.2 );
-            Nodes[10] = std::make_pair( std::make_pair(4000,6000) , -1.2 );
+            Nodes[10] = std::make_pair( std::make_pair(4300,4500) , -0.5 );
+            Nodes[11] = std::make_pair( std::make_pair(4600,5500) , 1 );
+            Nodes[12] = std::make_pair( std::make_pair(5600,6200) , -0.3 );
+            Nodes[13] = std::make_pair( std::make_pair(6400,7000) , -0.1 );
+            Nodes[14] = std::make_pair( std::make_pair(7100,7600) , 0.2 );
+            Nodes[15] = std::make_pair( std::make_pair(7700,8500) , -1 );
 
             //Create Obstacle
             int Obstacle_number = (int) finish_line_segment_length/density;
@@ -1067,7 +1022,7 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
             obstacle_details = new Obstacle_build[Obstacle_number];
             //other obstacles
             for(int i = 0 ; i < Obstacle_number - 1 ; i++){
-                obstacle_details[i].type = (i%2==0 ? cone : rock) ;
+                obstacle_details[i].type = (i%3>=(int)difficulty ? cone : rock) ;
                 obstacle_details[i].x = ( (double) rand() / RAND_MAX * 2 - 1) * road_width ;
                 //std::cout<<obstacle_details[i].x<<' ';
                 obstacle_details[i].y = 0;
@@ -1086,20 +1041,37 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
         }
         case Seaways_Dusk:
         {
-            int total_segment_length = 6000, finish_line_segment_length = 5000;
-            int Node_number = 11;
+            int total_segment_length = 13000, finish_line_segment_length = 12000;
+            int Node_number = 27;
             std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
-            Nodes[0] = std::make_pair( std::make_pair(100,300) , 0.5 );
-            Nodes[1] = std::make_pair( std::make_pair(500,1000) , -0.1 );
-            Nodes[2] = std::make_pair( std::make_pair(1000,1200) , 1.3 );
-            Nodes[3] = std::make_pair( std::make_pair(1400,1700) , -0.2 );
-            Nodes[4] = std::make_pair( std::make_pair(1701,1800) , -1.5 );
-            Nodes[5] = std::make_pair( std::make_pair(1801,1900) , 1.5 );
-            Nodes[6] = std::make_pair( std::make_pair(3100,2000) , -1.5 );
-            Nodes[7] = std::make_pair( std::make_pair(2101,2200) , 1.5 );
-            Nodes[8] = std::make_pair( std::make_pair(2301,2550) , -1.5 );
+            Nodes[0] = std::make_pair( std::make_pair(500,800) , 0.2 );
+            Nodes[1] = std::make_pair( std::make_pair(801,1200) , -0.2 );
+            Nodes[2] = std::make_pair( std::make_pair(1201,1300) , 1.3 );
+            Nodes[3] = std::make_pair( std::make_pair(1301,1400) , -1.5 );
+            Nodes[4] = std::make_pair( std::make_pair(1401,1500) , 1.5 );
+            Nodes[5] = std::make_pair( std::make_pair(1501,1600) , -1.5 );
+            Nodes[6] = std::make_pair( std::make_pair(2000,2200) , -0.3 );
+            Nodes[7] = std::make_pair( std::make_pair(2301,2700) , 0.1 );
+            Nodes[8] = std::make_pair( std::make_pair(3001,3200) , -0.1 );
             Nodes[9] = std::make_pair( std::make_pair(3800,3900) , 1.2 );
-            Nodes[10] = std::make_pair( std::make_pair(4000,6000) , -1.2 );
+            Nodes[10] = std::make_pair( std::make_pair(4000,4050) , -1.7 );
+            Nodes[11] = std::make_pair( std::make_pair(4051,4100) , 1.7 );
+            Nodes[12] = std::make_pair( std::make_pair(4101,4150) , -1.8 );
+            Nodes[13] = std::make_pair( std::make_pair(4151,4200) , +1.7 );
+            Nodes[14] = std::make_pair( std::make_pair(4201,4250) , -1.7 );
+            Nodes[15] = std::make_pair( std::make_pair(4251,4300) , +1.8 );
+            Nodes[16] = std::make_pair( std::make_pair(4301,4500) , -0.3 );
+            Nodes[17] = std::make_pair( std::make_pair(4801,5200) , 0.2);
+            Nodes[18] = std::make_pair( std::make_pair(5401,5900) , -0.3 );
+            Nodes[19] = std::make_pair( std::make_pair(6101,7000) , 0.7 );
+            Nodes[20] = std::make_pair( std::make_pair(7101,7500) , -0.2 );
+            Nodes[21] = std::make_pair( std::make_pair(7600,7800) , 0.3 );
+            Nodes[22] = std::make_pair( std::make_pair(8000,8250) , -0.2 );
+            Nodes[23] = std::make_pair( std::make_pair(8501,9000) , 0.4 );
+            Nodes[24] = std::make_pair( std::make_pair(9500,9600) , -1.5 );
+            Nodes[25] = std::make_pair( std::make_pair(9700,9950) , 0.5 );
+            Nodes[26] = std::make_pair( std::make_pair(11000,11900) , -1.6 );
+            
 
             //Create Obstacle
             int Obstacle_number = (int) finish_line_segment_length/density;
@@ -1107,7 +1079,7 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
             obstacle_details = new Obstacle_build[Obstacle_number];
             //other obstacles
             for(int i = 0 ; i < Obstacle_number - 1 ; i++){
-                obstacle_details[i].type = (i%2==0 ? cone : rock) ;
+                obstacle_details[i].type = (i%3>=(int)difficulty ? cone : rock) ;
                 obstacle_details[i].x = ( (double) rand() / RAND_MAX * 2 - 1) * road_width ;
                 //std::cout<<obstacle_details[i].x<<' ';
                 obstacle_details[i].y = 0;
@@ -1125,20 +1097,36 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
         }
         case Seaways_Night:
         {
-            int total_segment_length = 6000, finish_line_segment_length = 5000;
-            int Node_number = 11;
+            int total_segment_length = 12000, finish_line_segment_length = 11000;
+            int Node_number = 27;
             std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
-            Nodes[0] = std::make_pair( std::make_pair(100,300) , 0.5 );
-            Nodes[1] = std::make_pair( std::make_pair(500,1000) , -0.1 );
-            Nodes[2] = std::make_pair( std::make_pair(1000,1200) , 1.3 );
-            Nodes[3] = std::make_pair( std::make_pair(1400,1700) , -0.2 );
-            Nodes[4] = std::make_pair( std::make_pair(1701,1800) , -1.5 );
-            Nodes[5] = std::make_pair( std::make_pair(1801,1900) , 1.5 );
-            Nodes[6] = std::make_pair( std::make_pair(3100,2000) , -1.5 );
-            Nodes[7] = std::make_pair( std::make_pair(2101,2200) , 1.5 );
-            Nodes[8] = std::make_pair( std::make_pair(2301,2550) , -1.5 );
-            Nodes[9] = std::make_pair( std::make_pair(3800,3900) , 1.2 );
-            Nodes[10] = std::make_pair( std::make_pair(4000,6000) , -1.2 );
+            Nodes[0] = std::make_pair( std::make_pair(600,900) , 0.2 );
+            Nodes[1] = std::make_pair( std::make_pair(901,1100) , -0.2 );
+            Nodes[2] = std::make_pair( std::make_pair(1201,1400) , 1.1 );
+            Nodes[3] = std::make_pair( std::make_pair(1401,1600) , -1.6 );
+            Nodes[4] = std::make_pair( std::make_pair(1401,1550) , 1.5 );
+            Nodes[5] = std::make_pair( std::make_pair(1501,1600) , -1.6 );
+            Nodes[6] = std::make_pair( std::make_pair(2500,2560) , 0.3 );
+            Nodes[7] = std::make_pair( std::make_pair(2601,2700) , -0.2 );
+            Nodes[8] = std::make_pair( std::make_pair(3001,3250) , -0.1 );
+            Nodes[9] = std::make_pair( std::make_pair(3600,3900) , 1.1 );
+            Nodes[10] = std::make_pair( std::make_pair(3920,4050) , 1.1 );
+            Nodes[11] = std::make_pair( std::make_pair(4051,4500) , -1.7 );
+            Nodes[12] = std::make_pair( std::make_pair(4501,4550) , -1 );
+            Nodes[13] = std::make_pair( std::make_pair(4651,5000) , +0.7 );
+            Nodes[14] = std::make_pair( std::make_pair(5201,5350) , -1.2 );
+            Nodes[15] = std::make_pair( std::make_pair(5420,5560) , +1.5 );
+            Nodes[16] = std::make_pair( std::make_pair(5601,5800) , -0.3 );
+            Nodes[17] = std::make_pair( std::make_pair(5801,5900) , 0.2);
+            Nodes[18] = std::make_pair( std::make_pair(6301,6526) , -0.3 );
+            Nodes[19] = std::make_pair( std::make_pair(6801,7000) , 0.6 );
+            Nodes[20] = std::make_pair( std::make_pair(7101,7300) , -0.2 );
+            Nodes[21] = std::make_pair( std::make_pair(7600,7800) , 0.3 );
+            Nodes[22] = std::make_pair( std::make_pair(8000,8350) , 0.1 );
+            Nodes[23] = std::make_pair( std::make_pair(8501,8900) , -0.3 );
+            Nodes[24] = std::make_pair( std::make_pair(9500,9650) , -1.2 );
+            Nodes[25] = std::make_pair( std::make_pair(9700,9950) , 0.4 );
+            Nodes[26] = std::make_pair( std::make_pair(10000,10900) , 1.3 );
 
             //Create Obstacle
             int Obstacle_number = (int) finish_line_segment_length/density;
@@ -1146,7 +1134,7 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
             obstacle_details = new Obstacle_build[Obstacle_number];
             //other obstacles
             for(int i = 0 ; i < Obstacle_number - 1 ; i++){
-                obstacle_details[i].type = (i%2==0 ? cone : rock) ;
+                obstacle_details[i].type = (i%3>=(int)difficulty ? cone : rock) ;
                 obstacle_details[i].x = ( (double) rand() / RAND_MAX * 2 - 1) * road_width ;
                 //std::cout<<obstacle_details[i].x<<' ';
                 obstacle_details[i].y = 0;

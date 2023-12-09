@@ -13,7 +13,8 @@ extern const int SCREEN_HEIGHT ;
 
 #ifndef MAP_PAGE
 #define MAP_PAGE
-
+extern Mix_Chunk* textsound;
+extern Mix_Chunk* buttonSound;
 class MapPage{
     private:
         int map_opt,car_opt,difficulty_opt;
@@ -68,6 +69,7 @@ void MapPage::left_opt(MapPage &mp){
             mp.difficulty_opt+=2;mp.difficulty_opt%=3;
         }
     }
+    Mix_PlayChannel(-1,buttonSound,0);
 }
 void MapPage::right_opt(MapPage &mp){
     if(!mp.ifMapChosen()){
@@ -82,20 +84,24 @@ void MapPage::right_opt(MapPage &mp){
             mp.difficulty_opt++;mp.difficulty_opt%=3;
         }
     }
+    Mix_PlayChannel(-1,buttonSound,0);
 }
 void MapPage::UP_opt(MapPage &mp){
     if(mp.ifMapChosen()){
         if(mp.CarOrDifficulty()){mp.onDiff = false;}
     }
+    Mix_PlayChannel(-1,buttonSound,0);
 }
 void MapPage::DOWN_opt(MapPage &mp){
     if(mp.ifMapChosen()){
         if(!mp.CarOrDifficulty()){mp.onDiff = true;}
     }
+    Mix_PlayChannel(-1,buttonSound,0);
 }
 
 void MapPage::showNameEffect(MapPage &mp,std::string str,SDL_Renderer* REND){
     std::string temp = "";
+    Mix_Volume(-1,64);
     for(int i=0;i<str.length();i++){
         SDL_RenderClear(REND);
         mp.map.render(40,40,560,560,REND);
@@ -103,9 +109,12 @@ void MapPage::showNameEffect(MapPage &mp,std::string str,SDL_Renderer* REND){
         mp.text.loadFromRenderedText(temp,White,REND,mapFont);
         mp.text.render(320-20*temp.length(),630,40*temp.length(),60,REND);
         SDL_RenderPresent(REND);
+        Mix_PlayChannel(-1,textsound,0);
         SDL_Delay(20);
     }
     mp.mapname = str;
+    SDL_Delay(100);
+    Mix_Volume(-1,128);
     SDL_PumpEvents();
     SDL_FlushEvents(SDL_FIRSTEVENT,SDL_LASTEVENT);
 }
@@ -165,9 +174,9 @@ void MapPage::show(MapPage &mp,SDL_Renderer* REND){
         mp.text.render(SCREEN_WIDTH*0.2,0,SCREEN_WIDTH*0.6,100,REND);
         //button
         mp.button.loadFromFile("image/menu/left_button.png",REND);
-        mp.button.render(20,SCREEN_HEIGHT*0.5-50,100,100,REND);
+        mp.button.render(20,350,100,100,REND);
         mp.button.loadFromFile("image/menu/right_button.png",REND);
-        mp.button.render(SCREEN_WIDTH-120,SCREEN_HEIGHT*0.5-50,100,100,REND);
+        mp.button.render(SCREEN_WIDTH-120,350,100,100,REND);
     }
     else{
         switch(mp.getMap()){
