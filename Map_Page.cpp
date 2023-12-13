@@ -26,6 +26,12 @@ class MapPage{
         TTF_Font* mapFont;
         bool mapChosen, onDiff, showEffect;
     public:
+        MapPage(){
+            mapFont = TTF_OpenFont("test_ttf/ARCADECLASSIC.ttf",16);
+        }
+        ~MapPage(){
+            TTF_CloseFont(mapFont);
+        }
         void Initialize(){
             map_opt=0;car_opt=0;difficulty_opt=0;
             mapChosen=false;onDiff=false;showEffect=true;
@@ -121,7 +127,6 @@ void MapPage::showNameEffect(MapPage &mp,std::string str,SDL_Renderer* REND){
 
 void MapPage::show(MapPage &mp,SDL_Renderer* REND){
     SDL_RenderClear(REND);
-    mp.mapFont = TTF_OpenFont("test_ttf/ARCADECLASSIC.ttf",16);
     //background
     mp.background.loadFromFile("image/menu/black.png",REND);
     mp.background.render(0,0,SCREEN_WIDTH,SCREEN_HEIGHT,REND);

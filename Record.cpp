@@ -20,6 +20,9 @@ class Record{
 	private:
         std::string MapName;
         std::string Difficulty;
+        TTF_Font * Font;
+        TTF_Font * Font2;
+
     
     public:	
         int ranking[5];
@@ -28,6 +31,14 @@ class Record{
         LTexture recordTexture;
         int new_record_ind = -1;
 
+        Record(){
+            Font = TTF_OpenFont("test_ttf/SegUIVar.ttf",14);
+            Font2 = TTF_OpenFont("test_ttf/ARCADECLASSIC.ttf",14);
+        }
+        ~Record(){
+            TTF_CloseFont(Font);
+            TTF_CloseFont(Font2);
+        }
 		//Initialize
 		void RecordReset(Record &rec,std::string name,std::string difficulty,const char* path);
 
@@ -36,7 +47,7 @@ class Record{
         void loadFromFile(Record &rec,const char* path);
 
 		//show all recorded records
-		void show(Record &rec,SDL_Renderer* REND,TTF_Font* Font,TTF_Font* Font2);
+		void show(Record &rec,SDL_Renderer* REND);
 
 		//add new record if better time
 		void setRecordTime(Record &rec,double timing);
@@ -85,9 +96,7 @@ void Record::writeToFile(Record &rec,const char* path){
     fclose(fp);
 }
 
-void Record::show(Record &rec,SDL_Renderer* REND,TTF_Font* Font,TTF_Font* Font2){
-	Font = TTF_OpenFont("test_ttf/SegUIVar.ttf",14);
-    Font2 = TTF_OpenFont("test_ttf/ARCADECLASSIC.ttf",14);
+void Record::show(Record &rec,SDL_Renderer* REND){
 	rec.recordTexture.loadFromRenderedText(rec.MapName,White,REND,Font2);
     rec.recordTexture.render(SCREEN_WIDTH*0.5-30*rec.MapName.length(),0,60*rec.MapName.length(),SCREEN_HEIGHT*0.25,REND);
     rec.recordTexture.loadFromRenderedText(rec.Difficulty,White,REND,Font2);

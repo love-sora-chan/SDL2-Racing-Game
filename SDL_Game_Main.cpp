@@ -172,7 +172,7 @@ int WinMain(int argc,char *argv[]){
 			//While application is running
 			while( !quit )
 			{
-				Mix_VolumeMusic(32);
+				Mix_VolumeMusic(64);
 				Uint32 game_start_time;
             	bool game_started = 0;
 				if(Mix_PlayingMusic()==0 && main_menu.PlayMusic()){
@@ -345,7 +345,6 @@ int WinMain(int argc,char *argv[]){
 					else if(STATUS == Game_Page){
 						
 						Uint32 elapsed_time = 0;
-						bool gated = true;int temp_T = 0;
 						if(in_play==0){
 							load_game_media(gRenderer,map_parameter,difficulty_parameter);
 							create_map(map_parameter,difficulty_parameter,map);
@@ -353,9 +352,9 @@ int WinMain(int argc,char *argv[]){
 							create_camera();							
 							
 							SDL_RenderClear(gRenderer);
-							draw_words(gRenderer,"Arrow Key UP↑/DOWN↓ to accelerate/decelerate",SCREEN_WIDTH/2,SCREEN_HEIGHT*1/4,70);
-							draw_words(gRenderer,"Arrow Key LEFT←/RIGHT→ to go left/right",SCREEN_WIDTH/2,SCREEN_HEIGHT*2/4,70);
-							draw_words(gRenderer,"Press Enter to start game",SCREEN_WIDTH/2,SCREEN_HEIGHT*3/4,70);
+							draw_words(gRenderer,"Arrow Key UP↑/DOWN↓ to accelerate/decelerate",SCREEN_WIDTH/2,SCREEN_HEIGHT*1/4,50);
+							draw_words(gRenderer,"Arrow Key LEFT←/RIGHT→ to go left/right",SCREEN_WIDTH/2,SCREEN_HEIGHT*2/4,50);
+							draw_words(gRenderer,"Press Enter to start game",SCREEN_WIDTH/2,SCREEN_HEIGHT*3/4,50);
 							SDL_RenderPresent(gRenderer);
 
 							while( !quit && in_play == 0){
@@ -371,6 +370,23 @@ int WinMain(int argc,char *argv[]){
 
 						}
 
+						Mix_VolumeChunk(countdown,32);
+						Mix_PlayChannel(-1,countdown,0);
+						game_start_time = SDL_GetTicks();
+						while(SDL_GetTicks()-game_start_time<4700){
+							int time_pass = 4.7 - (SDL_GetTicks()-game_start_time)/1000.0;
+							
+							draw_scene(gRenderer, map, cam ,car_main, 300);
+							draw_cars(gRenderer, cam , car_main);
+							draw_words(gRenderer,std::to_string(time_pass),SCREEN_WIDTH/2, SCREEN_HEIGHT/3,200);
+
+							SDL_RenderPresent(gRenderer);
+						}
+						game_start_time = SDL_GetTicks();
+						game_started=1;
+						SDL_PumpEvents();
+						SDL_FlushEvents(SDL_FIRSTEVENT,SDL_LASTEVENT);
+
 						while( !quit && in_play == 1){
 							//calculate time
 							Uint32 time_start = SDL_GetTicks();
@@ -379,7 +395,6 @@ int WinMain(int argc,char *argv[]){
 										quit = true;
 									}
 							}
-							if(!gated){
 							if(keyarr[SDL_SCANCODE_LEFT])
 								car_main->move_left();
 							if(keyarr[SDL_SCANCODE_RIGHT])
@@ -416,7 +431,7 @@ int WinMain(int argc,char *argv[]){
 									Mix_Pause(1);
 								}
 							}
-							}
+							
 							//Draw Scene
 							draw_scene(gRenderer, map, cam ,car_main, 300);
 
@@ -439,19 +454,6 @@ int WinMain(int argc,char *argv[]){
 							//draw cars, main car
 							draw_cars(gRenderer, cam , car_main);
 							SDL_RenderPresent(gRenderer);
-							
-							//countdown
-							temp_T++;
-							if(gated && temp_T>50){								
-								Mix_VolumeChunk(countdown,32);
-								Mix_PlayChannel(-1,countdown,0);
-								SDL_Delay(4500);
-								gated = false;
-								game_start_time = SDL_GetTicks();
-								game_started=1;
-								SDL_PumpEvents();
-								SDL_FlushEvents(SDL_FIRSTEVENT,SDL_LASTEVENT);
-							}
 
 
 							//Check collision between obstacle and car
@@ -485,7 +487,7 @@ int WinMain(int argc,char *argv[]){
 								rp.record[(int)map_parameter][(int)difficulty_parameter].setRecordTime(rp.record[(int)map_parameter][(int)difficulty_parameter],((double)elapsed_time/1000));
 								Transition(gRenderer,0);
 								finish_page.Initialize(gRenderer);
-                                finish_page.show(finish_page,gRenderer,Font,(int)carintact);
+                                finish_page.show(finish_page,gRenderer,(int)carintact);
 								
 /*
 								Mix_PlayChannel(-1,changePageSound,0);
@@ -500,12 +502,15 @@ int WinMain(int argc,char *argv[]){
 								Mix_HaltChannel(-1);
 								carintact = car_main->is_car_intact();
 								close_game();
+								/*
+								SDL_DestroyRenderer(gRenderer);
+								gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+								*/
 								STATUS = Finish_Page;
 								in_play = 0;
 								Transition(gRenderer,0);
 								finish_page.Initialize(gRenderer);
-                                finish_page.show(finish_page,gRenderer,Font,(int)car_main->is_car_intact());
-								
+                                finish_page.show(finish_page,gRenderer,(int)car_main->is_car_intact());
 							}
 							//control framrate
 							framerate_cap(time_start, 60);

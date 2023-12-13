@@ -111,7 +111,7 @@ void RecordPage::show(RecordPage &rp,SDL_Renderer* REND){
     rp.mapchange(rp,REND);
     rp.background.render(0,0,SCREEN_WIDTH,SCREEN_HEIGHT,REND);
     rp.record[rp.map_option][rp.diffculty_option].loadFromFile(rp.record[rp.map_option][rp.diffculty_option],path[rp.map_option][rp.diffculty_option]);
-    rp.record[rp.map_option][rp.diffculty_option].show(rp.record[rp.map_option][rp.diffculty_option],REND,Font,Font2);
+    rp.record[rp.map_option][rp.diffculty_option].show(rp.record[rp.map_option][rp.diffculty_option],REND);
 
     if(rp.bar_opt==0){
         rp.button.loadFromFile("image/menu/left_button.png",REND);

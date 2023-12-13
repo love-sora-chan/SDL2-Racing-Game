@@ -151,7 +151,7 @@ class Objects{
     public:
         Objects():x(0), y(0), z(0), vx(0), vy(0), vz(0), scale(0), original_scale(2),screenX(0), screenY(0), picture_width(0), picture_height(0){}
         Objects(int new_z,double org_scale):x(0), y(0), z(new_z), vx(0), vy(0), vz(0), scale(0), original_scale(org_scale),screenX(0), screenY(0), picture_width(0), picture_height(0){}
-
+        ~Objects(){}
         //get values
         double get_x(){return x;}
         double get_y(){return y;}
@@ -224,6 +224,8 @@ class Line3D : public Objects{
     public:
         Line3D():Objects(), curve(0){
         }
+
+        ~Line3D(){}
         //3D coordinate to screen coordinate
         void project(Camera3D * cam){
             double delta_z = (z - cam->get_z() <= 10 ? 10 : z - cam->get_z());
@@ -257,6 +259,10 @@ public:
         this->x=x, this->y=y, this->segment_number_position=segment_number_position, this->type = type, this->original_scale = original_scale ;
         z = segment_number_position * segement_length;
         resolve_file_attributes();
+    }
+
+    ~Obstacle3D(){
+        SDL_DestroyTexture(obstacle_texture);
     }
 
     void change_type( Obstacle_Type type){
@@ -330,6 +336,9 @@ public:
         BgdestViewport.h = 0;
         BgdestViewport.x = 0;
         BgdestViewport.y = 0;
+    }
+    ~Background(){
+
     }
     int get_picture_width(){return picture_width;}
     int get_picture_height(){return picture_height;}
@@ -491,6 +500,7 @@ public :
         //delete Obstacles;
         delete [] Obstacles_Location;
         //delete Obstacles_Location;
+        delete background;
     }
 
     
@@ -520,6 +530,10 @@ class Car3D : public Objects{
         Car3D(double x, double y, double z, double vx,double vz, Car_Type type,  double original_scale,  bool main_car):Objects(1650,3){
             this->x=x, this->y=y, this->z=z,  this->vx=vx, this->vz=vz, this->type = type,this->original_scale = original_scale, this->main_car = main_car;
             resolve_file_attributes();
+        }
+
+        ~Car3D(){
+            SDL_DestroyTexture(car_texture);
         }
 
         void change_type( Car_Type type){
@@ -760,24 +774,19 @@ void Fell_into_Ocean(Car3D * car, Map * map){
 }
 
 void draw_words(SDL_Renderer * renderer, std::string ss, int screenx, int screeny, int font_size){
-    gFont = TTF_OpenFont( "ttf_fonts/ark-pixel-10px-monospaced-zh_tw.ttf", 10 );
-    if( gFont == NULL )
-    {
-        printf( "Failed to load font! SDL_ttf Error: %s\n", TTF_GetError() );
-    }
-    else
-    {
-        //Render text
-        SDL_Color ForegorundtextColor = { 255, 255, 255 };
-        //SDL_Color BackgorundtextColor = { 0, 0, 0 };
-        TTF_SetFontSize(gFont, 50);
-        if( !gTextTexture.loadFromRenderedText( ss, ForegorundtextColor , renderer, gFont) )
-        {
-            printf( "Failed to render text texture!\n" );
-        }
-        gTextTexture.render(( screenx - gTextTexture.getWidth()/ 2  ) , ( screeny - gTextTexture.getHeight()/ 2  ) , renderer );
 
+
+    //Render text
+    SDL_Color ForegorundtextColor = { 255, 255, 255 };
+    //SDL_Color BackgorundtextColor = { 0, 0, 0 };
+    TTF_SetFontSize(gFont, font_size);
+    if( !gTextTexture.loadFromRenderedText( ss, ForegorundtextColor , renderer, gFont) )
+    {
+        printf( "Failed to render text texture!\n" );
     }
+    gTextTexture.render(( screenx - gTextTexture.getWidth()/ 2  ) , ( screeny - gTextTexture.getHeight()/ 2  ) , renderer );
+
+
 
     gTextTexture.free();
 }
@@ -937,6 +946,8 @@ void framerate_cap(Uint32 start, int fps){
 
 //functions for main 
 void load_game_media(SDL_Renderer * renderer, Map_Type type, Difficulty difficulty){
+    gFont = TTF_OpenFont( "ttf_fonts/ark-pixel-10px-monospaced-zh_tw.ttf", 10 );
+    if( gFont == NULL ){std::cout<< "Failed to load font! SDL_ttf Error: "<<TTF_GetError();}
     crash = Mix_LoadWAV("audio/crash.wav");
     if(crash==NULL){ std::cout<<"Mix_LoadWav error\n";}
     decelerating = Mix_LoadWAV("audio/car_break.wav");
@@ -982,6 +993,7 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
     Obstacle_build * obstacle_details;
     int density;
     int total_segment_length, finish_line_segment_length;
+    std::pair<std::pair<int,int>,double> * Nodes;
     switch(difficulty){
         case Easy:
             density = 75;
@@ -998,7 +1010,7 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
         {
             total_segment_length = 12000,finish_line_segment_length = 10000;
             int Node_number = 15;
-            std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
+            Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
             Nodes[0] = std::make_pair( std::make_pair(100,300) , 0.2 );
             Nodes[1] = std::make_pair( std::make_pair(500,1000) , -0.5 );
             Nodes[2] = std::make_pair( std::make_pair(1000,1200) , 1 );
@@ -1043,7 +1055,7 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
         {
             int total_segment_length = 13000, finish_line_segment_length = 12000;
             int Node_number = 27;
-            std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
+            Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
             Nodes[0] = std::make_pair( std::make_pair(500,800) , 0.2 );
             Nodes[1] = std::make_pair( std::make_pair(801,1200) , -0.2 );
             Nodes[2] = std::make_pair( std::make_pair(1201,1300) , 1.3 );
@@ -1093,13 +1105,14 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
             obstacle_details[Obstacle_number-1].segment_number_position = finish_line_segment_length ;
             obstacle_details[Obstacle_number-1].original_scale = 10;
 
-            map = new Map("map",total_segment_length,Node_number,Nodes, Obstacle_number, obstacle_details,finish_line_segment_length,type);            break;        
+            map = new Map("map",total_segment_length,Node_number,Nodes, Obstacle_number, obstacle_details,finish_line_segment_length,type);
+            break;        
         }
         case Seaways_Night:
         {
             int total_segment_length = 12000, finish_line_segment_length = 11000;
             int Node_number = 27;
-            std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
+            Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
             Nodes[0] = std::make_pair( std::make_pair(600,900) , 0.2 );
             Nodes[1] = std::make_pair( std::make_pair(901,1100) , -0.2 );
             Nodes[2] = std::make_pair( std::make_pair(1201,1400) , 1.1 );
@@ -1148,15 +1161,19 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
             obstacle_details[Obstacle_number-1].segment_number_position = finish_line_segment_length ;
             obstacle_details[Obstacle_number-1].original_scale = 10;
 
-            map = new Map("map",total_segment_length,Node_number,Nodes, Obstacle_number, obstacle_details,finish_line_segment_length,type);            break;        
+            map = new Map("map",total_segment_length,Node_number,Nodes, Obstacle_number, obstacle_details,finish_line_segment_length,type);
+            break;        
         }
 
     };
     delete [] obstacle_details;
-    //delete obstacle_details;
-
-
-
+    /*
+    if(Nodes==NULL){std::cout<<"Node is NULL at create_map\n";}
+    else{
+        delete [] Nodes;
+    }
+    */
+    
 }
 
 void create_camera(){cam = new Camera3D(0,1550,100,5,0,0);}
@@ -1166,7 +1183,18 @@ void create_car(Car_Type type){car_main = new Car3D(type,true);}
 void close_game(){
     Mix_FreeChunk(crash);
     Mix_FreeMusic(music);
-    map = NULL;
+    for(int i = 0 ; i < Num_Of_Cars ; i++){
+        SDL_DestroyTexture(Car_Textures[i]);
+    }
+    for(int i = 0 ; i < Num_Of_Obstacles ; i++){
+        SDL_DestroyTexture(Obstacle_Textures[i]);
+    }
+    SDL_DestroyTexture(Background_Texture);
+
+    //delete map;
+    delete map;
+    //delete car_main;
+    //delete cam;
 
     //Free loaded images
     gTextTexture.free();

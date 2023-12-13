@@ -20,14 +20,21 @@ public:
     double usedTime;
     int finishWay;
     LTexture background,notification;
+    TTF_Font* Font;
 
     const char src[3][40]={"image/menu/finish.png","image/menu/fail_fallen.png","image/menu/fail_crush.png"};
 
+    finishPage(){
+        Font = TTF_OpenFont("test_ttf/SegUIVar.ttf",22);
+    }
+    ~finishPage(){
+        TTF_CloseFont(Font);
+    }
     void Initialize(SDL_Renderer* REND){
         background.loadFromFile("image/menu/black.png",REND);
     }
 
-    void show(finishPage &f, SDL_Renderer* REND, TTF_Font* Font,int way);
+    void show(finishPage &f, SDL_Renderer* REND,int way);
 
     void setUsedTime(finishPage &f,double T);
 };
@@ -36,7 +43,7 @@ void finishPage::setUsedTime(finishPage &f,double T){
     f.usedTime = T;
 }
 
-void finishPage::show(finishPage &f, SDL_Renderer* REND, TTF_Font* Font,int way){
+void finishPage::show(finishPage &f, SDL_Renderer* REND,int way){
     SDL_RenderClear(REND);
     f.background.loadFromFile(f.src[way],REND);
     f.background.setAlpha(64);
@@ -46,10 +53,10 @@ void finishPage::show(finishPage &f, SDL_Renderer* REND, TTF_Font* Font,int way)
             std::ostringstream str;
             str << std::fixed << std::setprecision(2) << f.usedTime;
             std::string timeUsed = str.str();
-	        Font = TTF_OpenFont("test_ttf/SegUIVar.ttf",22);
+	        TTF_SetFontSize(Font,22);
             f.notification.loadFromRenderedText("FINISH!",White,REND,Font);
             f.notification.render(SCREEN_WIDTH/3,SCREEN_HEIGHT/8,SCREEN_WIDTH/3,SCREEN_HEIGHT/3,REND);
-            Font = TTF_OpenFont("test_ttf/SegUIVar.ttf",14);
+            TTF_SetFontSize(Font,14);
             f.notification.loadFromRenderedText("You've completed",White,REND,Font);
             f.notification.render(SCREEN_WIDTH/6,SCREEN_HEIGHT/2,SCREEN_WIDTH/3*2,SCREEN_HEIGHT/4,REND);
             f.notification.loadFromRenderedText("the map in "+timeUsed+" s",White,REND,Font);
@@ -58,10 +65,10 @@ void finishPage::show(finishPage &f, SDL_Renderer* REND, TTF_Font* Font,int way)
             break;
         }
         case 1:{
-            Font = TTF_OpenFont("test_ttf/SegUIVar.ttf",22);
+            TTF_SetFontSize(Font,22);
             f.notification.loadFromRenderedText("FAILED!",White,REND,Font);
             f.notification.render(SCREEN_WIDTH/3,SCREEN_HEIGHT/8,SCREEN_WIDTH/3,SCREEN_HEIGHT/3,REND);
-            Font = TTF_OpenFont("test_ttf/SegUIVar.ttf",12);
+            TTF_SetFontSize(Font,12);
             f.notification.loadFromRenderedText("You've fallen into the sea!",White,REND,Font);
             f.notification.render(SCREEN_WIDTH*0.1,SCREEN_HEIGHT/2,SCREEN_WIDTH*0.8,SCREEN_HEIGHT/4,REND);
             f.notification.loadFromRenderedText("Maybe next time ?",White,REND,Font);
@@ -70,10 +77,10 @@ void finishPage::show(finishPage &f, SDL_Renderer* REND, TTF_Font* Font,int way)
             break;
         }
         case 2:{
-            Font = TTF_OpenFont("test_ttf/SegUIVar.ttf",22);
+            TTF_SetFontSize(Font,22);
             f.notification.loadFromRenderedText("FAILED!",White,REND,Font);
             f.notification.render(SCREEN_WIDTH/3,SCREEN_HEIGHT/8,SCREEN_WIDTH/3,SCREEN_HEIGHT/3,REND);
-            Font = TTF_OpenFont("test_ttf/SegUIVar.ttf",12);
+            TTF_SetFontSize(Font,12);
             f.notification.loadFromRenderedText("You've hit the rock!",White,REND,Font);
             f.notification.render(SCREEN_WIDTH*0.1,SCREEN_HEIGHT/2,SCREEN_WIDTH*0.8,SCREEN_HEIGHT/4,REND);
             f.notification.loadFromRenderedText("Maybe next time ?",White,REND,Font);

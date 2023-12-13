@@ -27,6 +27,13 @@ public:
     TTF_Font* nameFont;
     LTexture nameShowing;
 
+    INP(){
+        nameFont = TTF_OpenFont("test_ttf/ARCADECLASSIC.ttf",48);
+    }
+    ~INP(){
+        TTF_CloseFont(nameFont);
+    }
+
     void Initialize(INP &i,SDL_Renderer* REND);
 
     void handle_input(INP &i,SDL_Renderer* REND,SDL_Event e);
@@ -61,7 +68,6 @@ void INP::show_centered(INP &i,SDL_Renderer* REND){
     SDL_RenderClear(REND);
     i.background.render(0,0,SCREEN_WIDTH,SCREEN_HEIGHT,REND);
     if(i.name.length()!=0){
-        i.nameFont = TTF_OpenFont("test_ttf/ARCADECLASSIC.ttf",48);
         i.nameShowing.loadFromRenderedText(i.name,White,REND,i.nameFont);
         i.nameShowing.render(SCREEN_WIDTH/2-30*name.length(),SCREEN_HEIGHT/2-50,60*name.length(),100,REND);
     }
