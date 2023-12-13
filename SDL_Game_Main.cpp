@@ -345,17 +345,14 @@ int WinMain(int argc,char *argv[]){
 					else if(STATUS == Game_Page){
 						
 						Uint32 elapsed_time = 0;
+						Uint32 frame_time = 0;
 						if(in_play==0){
 							load_game_media(gRenderer,map_parameter,difficulty_parameter);
 							create_map(map_parameter,difficulty_parameter,map);
 							create_car(car_parameter);
-							create_camera();							
-							
-							SDL_RenderClear(gRenderer);
-							draw_words(gRenderer,"Arrow Key UP↑/DOWN↓ to accelerate/decelerate",SCREEN_WIDTH/2,SCREEN_HEIGHT*1/4,50);
-							draw_words(gRenderer,"Arrow Key LEFT←/RIGHT→ to go left/right",SCREEN_WIDTH/2,SCREEN_HEIGHT*2/4,50);
-							draw_words(gRenderer,"Press Enter to start game",SCREEN_WIDTH/2,SCREEN_HEIGHT*3/4,50);
-							SDL_RenderPresent(gRenderer);
+							create_camera();
+														
+							show_tutorial(gRenderer);
 
 							while( !quit && in_play == 0){
 								while( SDL_PollEvent( &e ) != 0){
@@ -449,6 +446,9 @@ int WinMain(int argc,char *argv[]){
 							//draw progress
 							show_percentage(gRenderer, map, car_main);
 
+							//draw fps counter
+							show_fps(gRenderer,frame_time);
+
 							elapsed_time = show_time(gRenderer,game_start_time,SDL_GetTicks(),game_started);           
 							
 							//draw cars, main car
@@ -513,7 +513,7 @@ int WinMain(int argc,char *argv[]){
                                 finish_page.show(finish_page,gRenderer,(int)car_main->is_car_intact());
 							}
 							//control framrate
-							framerate_cap(time_start, 60);
+							frame_time = framerate_cap(time_start, 60);
 						}
 						
 					}
