@@ -32,8 +32,8 @@ class Record{
         int new_record_ind = -1;
 
         Record(){
-            Font = TTF_OpenFont("test_ttf/SegUIVar.ttf",14);
-            Font2 = TTF_OpenFont("test_ttf/ARCADECLASSIC.ttf",14);
+            Font = TTF_OpenFont("font/SegUIVar.ttf",14);
+            Font2 = TTF_OpenFont("font/ARCADECLASSIC.ttf",14);
         }
         ~Record(){
             TTF_CloseFont(Font);

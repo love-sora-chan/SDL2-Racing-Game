@@ -126,7 +126,7 @@ void volumeDown(double _s = 0.05){if(volume_p>0)	volume_p-=_s;}
 
 int WinMain(int argc,char *argv[]){
 	InitializeSDL();
-	gWindow = SDL_CreateWindow( "INITIAL F", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+	gWindow = SDL_CreateWindow( "INITIAL F : Fill The Sea", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
 	//You'd better check if it success!
 	if(gWindow == NULL){
 		printf("Window could not be created! SDL_Error: %s\n", SDL_GetError() );
@@ -385,7 +385,8 @@ int WinMain(int argc,char *argv[]){
 							
 							draw_scene(gRenderer, map, cam ,car_main, 300);
 							draw_cars(gRenderer, cam , car_main);
-							draw_words(gRenderer,std::to_string(time_pass),SCREEN_WIDTH/2, SCREEN_HEIGHT/3,200);
+							draw_words(gRenderer,std::to_string(time_pass),SCREEN_WIDTH/2, SCREEN_HEIGHT/3,(int) (200 * ( (4700 - SDL_GetTicks() + game_start_time)%1000/1000.0 )) + 40, White );
+							//draw_words(gRenderer,std::to_string(time_pass),SCREEN_WIDTH/2, SCREEN_HEIGHT/3,200,White);
 
 							SDL_RenderPresent(gRenderer);
 						}

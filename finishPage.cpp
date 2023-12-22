@@ -25,7 +25,7 @@ public:
     const char src[3][40]={"image/menu/finish.png","image/menu/fail_fallen.png","image/menu/fail_crush.png"};
 
     finishPage(){
-        Font = TTF_OpenFont("test_ttf/SegUIVar.ttf",22);
+        Font = TTF_OpenFont("font/SegUIVar.ttf",22);
     }
     ~finishPage(){
         TTF_CloseFont(Font);

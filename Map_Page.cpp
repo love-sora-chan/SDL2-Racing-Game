@@ -27,7 +27,7 @@ class MapPage{
         bool mapChosen, onDiff, showEffect;
     public:
         MapPage(){
-            mapFont = TTF_OpenFont("test_ttf/ARCADECLASSIC.ttf",16);
+            mapFont = TTF_OpenFont("font/ARCADECLASSIC.ttf",16);
         }
         ~MapPage(){
             TTF_CloseFont(mapFont);

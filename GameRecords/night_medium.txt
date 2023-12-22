@@ -1,8 +1,8 @@
 Night
 Medium
 1
-UNKNOWN
-0.000000
+fdgd
+84.240000
 2
 UNKNOWN
 0.000000

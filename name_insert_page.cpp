@@ -28,7 +28,7 @@ public:
     LTexture nameShowing;
 
     INP(){
-        nameFont = TTF_OpenFont("test_ttf/ARCADECLASSIC.ttf",48);
+        nameFont = TTF_OpenFont("font/ARCADECLASSIC.ttf",48);
     }
     ~INP(){
         TTF_CloseFont(nameFont);

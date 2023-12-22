@@ -802,28 +802,26 @@ void Fell_into_Ocean(Car3D * car, Map * map){
     }
 }
 
-void draw_words(SDL_Renderer * renderer, std::string ss, int screenx, int screeny, int font_size){
+void draw_words(SDL_Renderer * renderer, std::string ss, int screenx, int screeny, int font_size, SDL_Color color){
     //Render text
-    SDL_Color ForegorundtextColor = { 255, 255, 255 };
+    //SDL_Color ForegorundtextColor = { 255, 255, 255 };
     //SDL_Color BackgorundtextColor = { 0, 0, 0 };
     TTF_SetFontSize(gFont, font_size);
-    if( !gTextTexture.loadFromRenderedText( ss, ForegorundtextColor , renderer, gFont) )
+    if( !gTextTexture.loadFromRenderedText( ss, color , renderer, gFont) )
     {
         printf( "Failed to render text texture!\n" );
     }
     gTextTexture.render(( screenx - gTextTexture.getWidth()/ 2  ) , ( screeny - gTextTexture.getHeight()/ 2  ) , renderer );
-
-
 
     gTextTexture.free();
 }
 
 void show_tutorial(SDL_Renderer * renderer){
     SDL_RenderClear(renderer);
-    draw_words(renderer,"Arrow Key UP ↑ /DOWN ↓ to accelerate/decelerate",SCREEN_WIDTH/2,SCREEN_HEIGHT*1/5,50);
-    draw_words(renderer,"Arrow Key LEFT ← /RIGHT → to go left/right",SCREEN_WIDTH/2,SCREEN_HEIGHT*2/5,50);
-    draw_words(renderer,"Hit Rock = Die. Hit Cone = Slow Down.",SCREEN_WIDTH/2,SCREEN_HEIGHT*3/5,50);
-    draw_words(renderer,"Press Enter to start game",SCREEN_WIDTH/2,SCREEN_HEIGHT*4/5,50);
+    draw_words(renderer,"Arrow Key UP ↑ /DOWN ↓ to accelerate/decelerate",SCREEN_WIDTH/2,SCREEN_HEIGHT*1/5,50,White);
+    draw_words(renderer,"Arrow Key LEFT ← /RIGHT → to go left/right",SCREEN_WIDTH/2,SCREEN_HEIGHT*2/5,50,White);
+    draw_words(renderer,"Hit Rock = Die. Hit Cone = Slow Down.",SCREEN_WIDTH/2,SCREEN_HEIGHT*3/5,50,White);
+    draw_words(renderer,"Press Enter to start game",SCREEN_WIDTH/2,SCREEN_HEIGHT*4/5,50,White);
     SDL_RenderPresent(renderer);
 }
 
@@ -836,7 +834,7 @@ Uint32 show_time(SDL_Renderer * renderer ,Uint32 start_time, Uint32 curr_time ,b
     stream << std::fixed << std::setprecision(3) << (double)elapsed_time/1000 <<"s";
     std::string stringValue = stream.str();
     stringValue = stream.str();
-    draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*1/10,50);
+    draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*1/10,50,White);
     stream.str("");
     stream.clear();
     return elapsed_time;
@@ -847,7 +845,7 @@ void show_percentage( SDL_Renderer * renderer, Map * map ,Car3D * car){
     stream << std::fixed << std::setprecision(2) << car->get_z()/(map->Finish_Line_segement_number*segement_length)*100<<'%';
     std::string stringValue = stream.str();
     stringValue = stream.str();
-    draw_words(renderer, stringValue , SCREEN_WIDTH*1/10, SCREEN_HEIGHT*9/10,50);
+    draw_words(renderer, stringValue , SCREEN_WIDTH*1/10, SCREEN_HEIGHT*9/10,50,White);
     stream.str("");
     stream.clear();
 }
@@ -856,7 +854,7 @@ void show_speed(SDL_Renderer * renderer, Car3D * car){
     std::ostringstream stream;
     stream << std::fixed << std::setprecision(2) << car->get_vz() / 20 <<"km/hr";
     std::string stringValue = stream.str();
-    draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*9/10,50);
+    draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*9/10,50,White);
     stream.str("");
     stream.clear();
 }
@@ -876,7 +874,7 @@ void show_fps(SDL_Renderer * renderer, Uint32 elapsed_time){
     }
     stream << std::fixed << std::setprecision(2) << curr_fps <<" fps";
     std::string stringValue = stream.str();
-    draw_words(renderer, stringValue , SCREEN_WIDTH*1/20, SCREEN_HEIGHT*1/20,25);
+    draw_words(renderer, stringValue , SCREEN_WIDTH*1/20, SCREEN_HEIGHT*1/20,25,White);
     stream.str("");
     stream.clear();
 }
@@ -1000,7 +998,7 @@ Uint32 framerate_cap(Uint32 start, int fps){
 
 //functions for main 
 void load_game_media(SDL_Renderer * renderer, Map_Type type, Difficulty difficulty){
-    gFont = TTF_OpenFont( "ttf_fonts/ark-pixel-10px-monospaced-zh_tw.ttf", 10 );
+    gFont = TTF_OpenFont( "font/ark-pixel-10px-monospaced-zh_tw.ttf", 10 );
     if( gFont == NULL ){std::cout<< "Failed to load font! SDL_ttf Error: "<<TTF_GetError();}
     crash = Mix_LoadWAV("audio/crash.wav");
     if(crash==NULL){ std::cout<<"Mix_LoadWav error\n";}
