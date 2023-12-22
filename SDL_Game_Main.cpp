@@ -49,6 +49,8 @@ Map_Type map_parameter;
 Difficulty difficulty_parameter;
 Car_Status carintact;
 
+double volume_p = 1.0;
+
 
 void InitializeSDL(){
 	//Initialize SDL
@@ -116,12 +118,15 @@ void Transition(SDL_Renderer* REND,int delaytime = 1000){
 	}
 }
 
+void volumeUp(double _s = 0.05){if(volume_p<1)	volume_p+=_s;}
+void volumeDown(double _s = 0.05){if(volume_p>0)	volume_p-=_s;}
+
 
 
 
 int WinMain(int argc,char *argv[]){
 	InitializeSDL();
-	gWindow = SDL_CreateWindow( "TESTING", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+	gWindow = SDL_CreateWindow( "INITIAL F", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
 	//You'd better check if it success!
 	if(gWindow == NULL){
 		printf("Window could not be created! SDL_Error: %s\n", SDL_GetError() );
@@ -144,16 +149,16 @@ int WinMain(int argc,char *argv[]){
 			login.free();
 			
 			RecordPage rp;
-			//rp.allreset(rp);
-			rp.read(rp);
+			//rp.allreset();
+			rp.read();
 
             finishPage finish_page;
             finish_page.Initialize(gRenderer);
 
 			MENU main_menu;
-			main_menu.Initialize(main_menu,gRenderer);
-			main_menu.choosing(main_menu.opt,main_menu,gRenderer);
-			main_menu.show(main_menu,gRenderer);
+			main_menu.Initialize(gRenderer);
+			main_menu.choosing(main_menu.opt,gRenderer);
+			main_menu.show(gRenderer);
 
             INP inp;
 
@@ -172,13 +177,13 @@ int WinMain(int argc,char *argv[]){
 			//While application is running
 			while( !quit )
 			{
-				Mix_VolumeMusic(64);
+				Mix_VolumeMusic(64*volume_p);
 				Uint32 game_start_time;
             	bool game_started = 0;
 				if(Mix_PlayingMusic()==0 && main_menu.PlayMusic()){
 					Mix_PlayMusic(gMusic,0);
 				}
-				Mix_Volume(-1,192);
+				Mix_Volume(-1,192*volume_p);
 				//Handle events on queue
 				while( SDL_PollEvent( &e ) )
 				{
@@ -197,20 +202,22 @@ int WinMain(int argc,char *argv[]){
 							case Home_page:{
                                 {
 								switch(e.key.keysym.sym){
+									case SDLK_RIGHT:volumeUp();break;
+									case SDLK_LEFT:volumeDown();break;
 									case SDLK_UP:{
 										SDL_RenderClear(gRenderer);
                                         Mix_PlayChannel(-1,buttonSound,0);                                       
-										main_menu.UP_opt(main_menu);                                                            
-										main_menu.choosing(main_menu.opt,main_menu,gRenderer);
-										main_menu.show(main_menu,gRenderer);
+										main_menu.UP_opt();                                                            
+										main_menu.choosing(main_menu.opt,gRenderer);
+										main_menu.show(gRenderer);
 										break;
 									}
 									case SDLK_DOWN:{
 										SDL_RenderClear(gRenderer);
                                         Mix_PlayChannel(-1,buttonSound,0);
-										main_menu.DOWN_opt(main_menu);
-										main_menu.choosing(main_menu.opt,main_menu,gRenderer);
-										main_menu.show(main_menu,gRenderer);
+										main_menu.DOWN_opt();
+										main_menu.choosing(main_menu.opt,gRenderer);
+										main_menu.show(gRenderer);
 										break;
 									}
 									case SDLK_RETURN:{										
@@ -218,14 +225,14 @@ int WinMain(int argc,char *argv[]){
                                             case 1:{                                                
 												STATUS = Map_Page;
 												Mix_PlayChannel(-1,changePageSound,0);
-												mp.show(mp,gRenderer);
+												mp.show(gRenderer);
                                                 break;
                                             }
                                             case 2:{
                                                 STATUS = Record_Page;
                                                 Mix_PlayChannel(-1,changePageSound,0);
 											    Transition(gRenderer);
-											    rp.show(rp,gRenderer);
+											    rp.show(gRenderer);
                                                 break;
                                             }
                                             case 3:{ 
@@ -241,10 +248,12 @@ int WinMain(int argc,char *argv[]){
 							}
 							case Map_Page:{
 								switch(e.key.keysym.sym){
-									case SDLK_UP:mp.UP_opt(mp);break;
-									case SDLK_DOWN:mp.DOWN_opt(mp);break;
-									case SDLK_LEFT:mp.left_opt(mp);break;
-									case SDLK_RIGHT:mp.right_opt(mp);break;
+									case SDLK_UP:mp.UP_opt();break;
+									case SDLK_DOWN:mp.DOWN_opt();break;
+									case SDLK_LEFT:mp.left_opt();break;
+									case SDLK_RIGHT:mp.right_opt();break;
+									case SDLK_KP_PLUS:volumeUp();break;
+									case SDLK_KP_MINUS:volumeDown();break;
 									case SDLK_RETURN:{
 										if(mp.ifMapChosen()){
 											STATUS = Game_Page;
@@ -266,45 +275,47 @@ int WinMain(int argc,char *argv[]){
 											Mix_PlayChannel(-1,backSound,0);										
 											Transition(gRenderer);
 											mp.Initialize();											
-											main_menu.Initialize(main_menu,gRenderer);
-											main_menu.choosing(main_menu.opt,main_menu,gRenderer);
-											main_menu.appear(main_menu,gRenderer);
+											main_menu.Initialize(gRenderer);
+											main_menu.choosing(main_menu.opt,gRenderer);
+											main_menu.appear(gRenderer);
 										}										
 										break;
 									}
 								}
-								if(STATUS == Map_Page)mp.show(mp,gRenderer);
+								if(STATUS == Map_Page)mp.show(gRenderer);
 								break;
 							}
 							case Record_Page:{                                							
                             switch(e.key.keysym.sym){
+								case SDLK_KP_PLUS:volumeUp();break;
+								case SDLK_KP_MINUS:volumeDown();break;
                                 case SDLK_ESCAPE:{
                                     STATUS = Home_page;
 									Mix_PlayChannel(-1,backSound,0);
 									Transition(gRenderer);
-									main_menu.Initialize(main_menu,gRenderer);
-									main_menu.choosing(main_menu.opt,main_menu,gRenderer);
-									main_menu.appear(main_menu,gRenderer);
+									main_menu.Initialize(gRenderer);
+									main_menu.choosing(main_menu.opt,gRenderer);
+									main_menu.appear(gRenderer);
 									break;
                                 }
 								case SDLK_LEFT:{
-									rp.left_opt(rp);
-									rp.show(rp,gRenderer);
+									rp.left_opt();
+									rp.show(gRenderer);
 									break;
 								}
 								case SDLK_RIGHT:{
-									rp.right_opt(rp);
-									rp.show(rp,gRenderer);
+									rp.right_opt();
+									rp.show(gRenderer);
 									break;
 								}
 								case SDLK_UP:{
-									rp.UP_DOWN_opt(rp);
-									rp.show(rp,gRenderer);
+									rp.UP_DOWN_opt();
+									rp.show(gRenderer);
 									break;
 								}
 								case SDLK_DOWN:{
-									rp.UP_DOWN_opt(rp);
-									rp.show(rp,gRenderer);
+									rp.UP_DOWN_opt();
+									rp.show(gRenderer);
 									break;
 								}
                                 break;                                							
@@ -321,8 +332,8 @@ int WinMain(int argc,char *argv[]){
 										
 										SDL_Delay(3000);
                                         Transition(gRenderer);
-                                        inp.Initialize(inp,gRenderer);
-                                        inp.show_centered(inp,gRenderer);
+                                        inp.Initialize(gRenderer);
+                                        inp.show_centered(gRenderer);
                                         STATUS = InsertName_Page;  
 										SDL_PumpEvents();
 										SDL_FlushEvents(SDL_FIRSTEVENT,SDL_LASTEVENT);                                                                           
@@ -335,9 +346,9 @@ int WinMain(int argc,char *argv[]){
 										STATUS = Home_page;
 										carintact = Intact;
 										Transition(gRenderer);
-										main_menu.Initialize(main_menu,gRenderer);
-										main_menu.choosing(main_menu.opt,main_menu,gRenderer);
-										main_menu.appear(main_menu,gRenderer);
+										main_menu.Initialize(gRenderer);
+										main_menu.choosing(main_menu.opt,gRenderer);
+										main_menu.appear(gRenderer);
 										break;
 									}
                                 
@@ -366,8 +377,7 @@ int WinMain(int argc,char *argv[]){
 							}
 
 						}
-
-						Mix_VolumeChunk(countdown,32);
+						Mix_VolumeChunk(countdown,32*volume_p);
 						Mix_PlayChannel(-1,countdown,0);
 						game_start_time = SDL_GetTicks();
 						while(SDL_GetTicks()-game_start_time<4700){
@@ -386,12 +396,17 @@ int WinMain(int argc,char *argv[]){
 
 						while( !quit && in_play == 1){
 							//calculate time
+							Mix_VolumeMusic(192*volume_p);
+							Mix_Volume(-1,128*volume_p);
 							Uint32 time_start = SDL_GetTicks();
 							while( SDL_PollEvent( &e ) != 0){
 									if( e.type == SDL_QUIT ){
 										quit = true;
 									}
+									
 							}
+							if(keyarr[SDL_SCANCODE_LEFTBRACKET]){volumeDown(0.01);}
+							else if(keyarr[SDL_SCANCODE_RIGHTBRACKET]){volumeUp(0.01);}
 							if(keyarr[SDL_SCANCODE_LEFT])
 								car_main->move_left();
 							if(keyarr[SDL_SCANCODE_RIGHT])
@@ -470,9 +485,9 @@ int WinMain(int argc,char *argv[]){
 								STATUS = Home_page;
 								in_play = 0;
 								Transition(gRenderer);
-								main_menu.Initialize(main_menu,gRenderer);
-								main_menu.choosing(main_menu.opt,main_menu,gRenderer);
-								main_menu.appear(main_menu,gRenderer);	
+								main_menu.Initialize(gRenderer);
+								main_menu.choosing(main_menu.opt,gRenderer);
+								main_menu.appear(gRenderer);	
 							}
 							//check if passed finish line
 							else if(Reach_Finish(car_main, map)){
@@ -483,11 +498,11 @@ int WinMain(int argc,char *argv[]){
 								close_game();
 								STATUS = Finish_Page;
 								in_play = 0;
-								finish_page.setUsedTime(finish_page,((double)elapsed_time/1000));
-								rp.record[(int)map_parameter][(int)difficulty_parameter].setRecordTime(rp.record[(int)map_parameter][(int)difficulty_parameter],((double)elapsed_time/1000));
+								finish_page.setUsedTime(((double)elapsed_time/1000));
+								rp.record[(int)map_parameter][(int)difficulty_parameter].setRecordTime((double)elapsed_time/1000);
 								Transition(gRenderer,0);
 								finish_page.Initialize(gRenderer);
-                                finish_page.show(finish_page,gRenderer,(int)carintact);
+                                finish_page.show(gRenderer,(int)carintact);
 								
 /*
 								Mix_PlayChannel(-1,changePageSound,0);
@@ -510,7 +525,7 @@ int WinMain(int argc,char *argv[]){
 								in_play = 0;
 								Transition(gRenderer,0);
 								finish_page.Initialize(gRenderer);
-                                finish_page.show(finish_page,gRenderer,(int)car_main->is_car_intact());
+                                finish_page.show(gRenderer,(int)car_main->is_car_intact());
 							}
 							//control framrate
 							frame_time = framerate_cap(time_start, 60);
@@ -519,24 +534,26 @@ int WinMain(int argc,char *argv[]){
 					}
                     else if(STATUS == InsertName_Page){
 						main_menu.setPlayMusic(true);
+						if(e.key.keysym.sym == SDLK_KP_PLUS)volumeUp();
+						if(e.key.keysym.sym == SDLK_KP_MINUS)volumeDown();
                         if(e.key.keysym.sym == SDLK_RETURN){
                             if(inp.name.length()==0)
                                 inp.name = "UNKNOWN";
 
-                            rp.record[(int)map_parameter][(int)difficulty_parameter].setRecordName(rp.record[(int)map_parameter][(int)difficulty_parameter],inp.name);
+                            rp.record[(int)map_parameter][(int)difficulty_parameter].setRecordName(inp.name);
                             
 
-                            rp.record[(int)map_parameter][(int)difficulty_parameter].writeToFile(rp.record[(int)map_parameter][(int)difficulty_parameter],rp.get_path((int)map_parameter,(int)difficulty_parameter));
+                            rp.record[(int)map_parameter][(int)difficulty_parameter].writeToFile(rp.get_path((int)map_parameter,(int)difficulty_parameter));
 
                             STATUS = Home_page;
                             Mix_PlayChannel(-1,changePageSound,0);
 							Transition(gRenderer);
-							main_menu.Initialize(main_menu,gRenderer);
-							main_menu.choosing(main_menu.opt,main_menu,gRenderer);
-							main_menu.appear(main_menu,gRenderer);
+							main_menu.Initialize(gRenderer);
+							main_menu.choosing(main_menu.opt,gRenderer);
+							main_menu.appear(gRenderer);
 							break;
                         }
-                        inp.handle_input(inp,gRenderer,e);
+                        inp.handle_input(gRenderer,e);
                     }
 					
 

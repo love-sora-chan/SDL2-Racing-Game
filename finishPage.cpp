@@ -34,57 +34,57 @@ public:
         background.loadFromFile("image/menu/black.png",REND);
     }
 
-    void show(finishPage &f, SDL_Renderer* REND,int way);
+    void show(SDL_Renderer* REND,int way);
 
-    void setUsedTime(finishPage &f,double T);
+    void setUsedTime(double T);
 };
 
-void finishPage::setUsedTime(finishPage &f,double T){
-    f.usedTime = T;
+void finishPage::setUsedTime(double T){
+    usedTime = T;
 }
 
-void finishPage::show(finishPage &f, SDL_Renderer* REND,int way){
+void finishPage::show(SDL_Renderer* REND,int way){
     SDL_RenderClear(REND);
-    f.background.loadFromFile(f.src[way],REND);
-    f.background.setAlpha(64);
-    f.background.render(0,0,SCREEN_WIDTH,SCREEN_HEIGHT,REND);
+    background.loadFromFile(src[way],REND);
+    background.setAlpha(64);
+    background.render(0,0,SCREEN_WIDTH,SCREEN_HEIGHT,REND);
     switch(way){
         case 0:{
             std::ostringstream str;
-            str << std::fixed << std::setprecision(2) << f.usedTime;
+            str << std::fixed << std::setprecision(2) << usedTime;
             std::string timeUsed = str.str();
 	        TTF_SetFontSize(Font,22);
-            f.notification.loadFromRenderedText("FINISH!",White,REND,Font);
-            f.notification.render(SCREEN_WIDTH/3,SCREEN_HEIGHT/8,SCREEN_WIDTH/3,SCREEN_HEIGHT/3,REND);
+            notification.loadFromRenderedText("FINISH!",White,REND,Font);
+            notification.render(SCREEN_WIDTH/3,SCREEN_HEIGHT/8,SCREEN_WIDTH/3,SCREEN_HEIGHT/3,REND);
             TTF_SetFontSize(Font,14);
-            f.notification.loadFromRenderedText("You've completed",White,REND,Font);
-            f.notification.render(SCREEN_WIDTH/6,SCREEN_HEIGHT/2,SCREEN_WIDTH/3*2,SCREEN_HEIGHT/4,REND);
-            f.notification.loadFromRenderedText("the map in "+timeUsed+" s",White,REND,Font);
-            f.notification.render(SCREEN_WIDTH/6,SCREEN_HEIGHT*0.75,SCREEN_WIDTH/3*2,SCREEN_HEIGHT/4,REND);
+            notification.loadFromRenderedText("You've completed",White,REND,Font);
+            notification.render(SCREEN_WIDTH/6,SCREEN_HEIGHT/2,SCREEN_WIDTH/3*2,SCREEN_HEIGHT/4,REND);
+            notification.loadFromRenderedText("the map in "+timeUsed+" s",White,REND,Font);
+            notification.render(SCREEN_WIDTH/6,SCREEN_HEIGHT*0.75,SCREEN_WIDTH/3*2,SCREEN_HEIGHT/4,REND);
             SDL_RenderPresent(REND);
             break;
         }
         case 1:{
             TTF_SetFontSize(Font,22);
-            f.notification.loadFromRenderedText("FAILED!",White,REND,Font);
-            f.notification.render(SCREEN_WIDTH/3,SCREEN_HEIGHT/8,SCREEN_WIDTH/3,SCREEN_HEIGHT/3,REND);
+            notification.loadFromRenderedText("FAILED!",White,REND,Font);
+            notification.render(SCREEN_WIDTH/3,SCREEN_HEIGHT/8,SCREEN_WIDTH/3,SCREEN_HEIGHT/3,REND);
             TTF_SetFontSize(Font,12);
-            f.notification.loadFromRenderedText("You've fallen into the sea!",White,REND,Font);
-            f.notification.render(SCREEN_WIDTH*0.1,SCREEN_HEIGHT/2,SCREEN_WIDTH*0.8,SCREEN_HEIGHT/4,REND);
-            f.notification.loadFromRenderedText("Maybe next time ?",White,REND,Font);
-            f.notification.render(SCREEN_WIDTH*0.15,SCREEN_HEIGHT*0.75,SCREEN_WIDTH*0.7,SCREEN_HEIGHT/4,REND);
+            notification.loadFromRenderedText("You've fallen into the sea!",White,REND,Font);
+            notification.render(SCREEN_WIDTH*0.1,SCREEN_HEIGHT/2,SCREEN_WIDTH*0.8,SCREEN_HEIGHT/4,REND);
+            notification.loadFromRenderedText("Maybe next time ?",White,REND,Font);
+            notification.render(SCREEN_WIDTH*0.15,SCREEN_HEIGHT*0.75,SCREEN_WIDTH*0.7,SCREEN_HEIGHT/4,REND);
             SDL_RenderPresent(REND);
             break;
         }
         case 2:{
             TTF_SetFontSize(Font,22);
-            f.notification.loadFromRenderedText("FAILED!",White,REND,Font);
-            f.notification.render(SCREEN_WIDTH/3,SCREEN_HEIGHT/8,SCREEN_WIDTH/3,SCREEN_HEIGHT/3,REND);
+            notification.loadFromRenderedText("FAILED!",White,REND,Font);
+            notification.render(SCREEN_WIDTH/3,SCREEN_HEIGHT/8,SCREEN_WIDTH/3,SCREEN_HEIGHT/3,REND);
             TTF_SetFontSize(Font,12);
-            f.notification.loadFromRenderedText("You've hit the rock!",White,REND,Font);
-            f.notification.render(SCREEN_WIDTH*0.1,SCREEN_HEIGHT/2,SCREEN_WIDTH*0.8,SCREEN_HEIGHT/4,REND);
-            f.notification.loadFromRenderedText("Maybe next time ?",White,REND,Font);
-            f.notification.render(SCREEN_WIDTH*0.15,SCREEN_HEIGHT*0.75,SCREEN_WIDTH*0.7,SCREEN_HEIGHT/4,REND);
+            notification.loadFromRenderedText("You've hit the rock!",White,REND,Font);
+            notification.render(SCREEN_WIDTH*0.1,SCREEN_HEIGHT/2,SCREEN_WIDTH*0.8,SCREEN_HEIGHT/4,REND);
+            notification.loadFromRenderedText("Maybe next time ?",White,REND,Font);
+            notification.render(SCREEN_WIDTH*0.15,SCREEN_HEIGHT*0.75,SCREEN_WIDTH*0.7,SCREEN_HEIGHT/4,REND);
             SDL_RenderPresent(REND);
             break;
         }

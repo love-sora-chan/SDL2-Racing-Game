@@ -47,95 +47,95 @@ class RecordPage{
         {"GameRecords/night_easy.txt","GameRecords/night_medium.txt","GameRecords/night_hard.txt"}
         }){}
 
-		void allreset(RecordPage &rp);
-        void read(RecordPage &rp);
+		void allreset();
+        void read();
 		
 		//show
-		void show(RecordPage &rp,SDL_Renderer* REND);
+		void show(SDL_Renderer* REND);
 
 		//if going up or down
-		void left_opt(RecordPage &rp);
-		void right_opt(RecordPage &rp);
-        void UP_DOWN_opt(RecordPage &rp);
+		void left_opt();
+		void right_opt();
+        void UP_DOWN_opt();
 
 		//which page
-		void mapchange(RecordPage &rp,SDL_Renderer* REND);
+		void mapchange(SDL_Renderer* REND);
 
         //get path
         const char* get_path(int i,int j){return path[i][j];}
 
 		//appear or vanish in transition
-		//void vanish(RecordPage &rp,SDL_Renderer* REND,int spd );
-		//void appear(RecordPage &rp,SDL_Renderer* REND,int spd );
+		//void vanish(,SDL_Renderer* REND,int spd );
+		//void appear(,SDL_Renderer* REND,int spd );
 
 		
 };
 
-void RecordPage::allreset(RecordPage &rp){
+void RecordPage::allreset(){
     for(int i=0;i<3;i++){
         for(int j=0;j<3;j++){
-            rp.record[i][j].RecordReset(rp.record[i][j],record_mapname[i],record_difficulty[j],path[i][j]);
+            record[i][j].RecordReset(record_mapname[i],record_difficulty[j],path[i][j]);
         }
     }
 }
 
-void RecordPage::read(RecordPage &rp){
+void RecordPage::read(){
     for(int i=0;i<3;++i){
         for(int j=0;j<3;++j){
-            rp.record[i][j].loadFromFile(rp.record[i][j],path[i][j]);
+            record[i][j].loadFromFile(path[i][j]);
         }
     }
 }
 
 
-void RecordPage::UP_DOWN_opt(RecordPage &rp){
-	rp.bar_opt++;rp.bar_opt = rp.bar_opt%2;
+void RecordPage::UP_DOWN_opt(){
+	bar_opt++;bar_opt = bar_opt%2;
     Mix_PlayChannel(-1,buttonSound,0);
 }
-void RecordPage::left_opt(RecordPage &rp){
-    if(rp.bar_opt==0){
-        if(rp.map_option==0)    rp.map_option = 2;
-        else    rp.map_option--;
+void RecordPage::left_opt(){
+    if(bar_opt==0){
+        if(map_option==0)    map_option = 2;
+        else    map_option--;
     }
     else{
-        if(rp.diffculty_option==0)  rp.diffculty_option = 2;
+        if(diffculty_option==0)  diffculty_option = 2;
         else    diffculty_option--;
     }
     Mix_PlayChannel(-1,buttonSound,0);
 }
-void RecordPage::right_opt(RecordPage &rp){
-    if(rp.bar_opt==0){rp.map_option++;rp.map_option = rp.map_option%3;}
-    else    {rp.diffculty_option++;rp.diffculty_option = rp.diffculty_option%3;}
+void RecordPage::right_opt(){
+    if(bar_opt==0){map_option++;map_option = map_option%3;}
+    else    {diffculty_option++;diffculty_option = diffculty_option%3;}
     Mix_PlayChannel(-1,buttonSound,0);
 }
 
-void RecordPage::mapchange(RecordPage &rp,SDL_Renderer* REND){
-    switch(rp.map_option){
-        case 0:rp.background.loadFromFile("image/menu/noon.png",REND);break;
-        case 1:rp.background.loadFromFile("image/menu/dusk.png",REND);break;
-        case 2:rp.background.loadFromFile("image/menu/night.png",REND);break;
+void RecordPage::mapchange(SDL_Renderer* REND){
+    switch(map_option){
+        case 0:background.loadFromFile("image/menu/noon.png",REND);break;
+        case 1:background.loadFromFile("image/menu/dusk.png",REND);break;
+        case 2:background.loadFromFile("image/menu/night.png",REND);break;
     }
-    rp.background.setAlpha(64);
+    background.setAlpha(64);
 }
 
-void RecordPage::show(RecordPage &rp,SDL_Renderer* REND){
+void RecordPage::show(SDL_Renderer* REND){
     SDL_RenderClear(REND);
-    rp.mapchange(rp,REND);
-    rp.background.render(0,0,SCREEN_WIDTH,SCREEN_HEIGHT,REND);
-    rp.record[rp.map_option][rp.diffculty_option].loadFromFile(rp.record[rp.map_option][rp.diffculty_option],path[rp.map_option][rp.diffculty_option]);
-    rp.record[rp.map_option][rp.diffculty_option].show(rp.record[rp.map_option][rp.diffculty_option],REND);
+    mapchange(REND);
+    background.render(0,0,SCREEN_WIDTH,SCREEN_HEIGHT,REND);
+    record[map_option][diffculty_option].loadFromFile(path[map_option][diffculty_option]);
+    record[map_option][diffculty_option].show(REND);
 
-    if(rp.bar_opt==0){
-        rp.button.loadFromFile("image/menu/left_button.png",REND);
-        rp.button.render(SCREEN_WIDTH*0.25-SCREEN_HEIGHT*0.125,SCREEN_HEIGHT*(1.0/16),SCREEN_HEIGHT*0.125,SCREEN_HEIGHT*0.125,REND);
-        rp.button.loadFromFile("image/menu/right_button.png",REND);
-        rp.button.render(SCREEN_WIDTH*0.75,SCREEN_HEIGHT*(1.0/16),SCREEN_HEIGHT*0.125,SCREEN_HEIGHT*0.125,REND);
+    if(bar_opt==0){
+        button.loadFromFile("image/menu/left_button.png",REND);
+        button.render(SCREEN_WIDTH*0.25-SCREEN_HEIGHT*0.125,SCREEN_HEIGHT*(1.0/16),SCREEN_HEIGHT*0.125,SCREEN_HEIGHT*0.125,REND);
+        button.loadFromFile("image/menu/right_button.png",REND);
+        button.render(SCREEN_WIDTH*0.75,SCREEN_HEIGHT*(1.0/16),SCREEN_HEIGHT*0.125,SCREEN_HEIGHT*0.125,REND);
     }
     else{
-        rp.button.loadFromFile("image/menu/left_button.png",REND);
-        rp.button.render(SCREEN_WIDTH*0.25-SCREEN_HEIGHT*0.125,SCREEN_HEIGHT*0.25,SCREEN_HEIGHT*0.125,SCREEN_HEIGHT*0.125,REND);
-        rp.button.loadFromFile("image/menu/right_button.png",REND);
-        rp.button.render(SCREEN_WIDTH*0.75,SCREEN_HEIGHT*0.25,SCREEN_HEIGHT*0.125,SCREEN_HEIGHT*0.125,REND);
+        button.loadFromFile("image/menu/left_button.png",REND);
+        button.render(SCREEN_WIDTH*0.25-SCREEN_HEIGHT*0.125,SCREEN_HEIGHT*0.25,SCREEN_HEIGHT*0.125,SCREEN_HEIGHT*0.125,REND);
+        button.loadFromFile("image/menu/right_button.png",REND);
+        button.render(SCREEN_WIDTH*0.75,SCREEN_HEIGHT*0.25,SCREEN_HEIGHT*0.125,SCREEN_HEIGHT*0.125,REND);
     }
     SDL_RenderPresent(REND);
 }
