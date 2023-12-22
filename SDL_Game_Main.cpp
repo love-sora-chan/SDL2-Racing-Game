@@ -526,7 +526,7 @@ int WinMain(int argc,char *argv[]){
                             rp.record[(int)map_parameter][(int)difficulty_parameter].setRecordName(rp.record[(int)map_parameter][(int)difficulty_parameter],inp.name);
                             
 
-                            rp.record[(int)map_parameter][(int)difficulty_parameter].writeToFile(rp.record[(int)map_parameter][(int)difficulty_parameter],path[(int)map_parameter][(int)difficulty_parameter]);
+                            rp.record[(int)map_parameter][(int)difficulty_parameter].writeToFile(rp.record[(int)map_parameter][(int)difficulty_parameter],rp.get_path((int)map_parameter,(int)difficulty_parameter));
 
                             STATUS = Home_page;
                             Mix_PlayChannel(-1,changePageSound,0);

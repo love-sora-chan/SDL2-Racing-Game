@@ -15,18 +15,21 @@ extern Mix_Chunk* buttonSound;
 #ifndef RECORD_PAGE_cpp
 #define RECORD_PAGE_cpp
 
-const char* path[3][3]={
+/*const char* path[3][3]={
 {"GameRecords/noon_easy.txt","GameRecords/noon_medium.txt","GameRecords/noon_hard.txt"},
 {"GameRecords/dusk_easy.txt","GameRecords/dusk_medium.txt","GameRecords/dusk_hard.txt"},
 {"GameRecords/night_easy.txt","GameRecords/night_medium.txt","GameRecords/night_hard.txt"}
-};
+};*/
+/*
 TTF_Font* Font;
 TTF_Font* Font2;
+*/
 std::string record_mapname[3] = {"Noon","Dusk","Night"};
 std::string record_difficulty[3] = {"Easy","Medium","Hard"};
 
 class RecordPage{
 	private:
+        const char* path[3][3];
 
         //options
         LTexture button,background;
@@ -35,9 +38,15 @@ class RecordPage{
 		int bar_opt = 0;
         int map_option = 0;
         int diffculty_option = 0;
-
         Record record[3][3];
+
 		//initialize
+        RecordPage():path({
+        {"GameRecords/noon_easy.txt","GameRecords/noon_medium.txt","GameRecords/noon_hard.txt"},
+        {"GameRecords/dusk_easy.txt","GameRecords/dusk_medium.txt","GameRecords/dusk_hard.txt"},
+        {"GameRecords/night_easy.txt","GameRecords/night_medium.txt","GameRecords/night_hard.txt"}
+        }){}
+
 		void allreset(RecordPage &rp);
         void read(RecordPage &rp);
 		
@@ -51,6 +60,9 @@ class RecordPage{
 
 		//which page
 		void mapchange(RecordPage &rp,SDL_Renderer* REND);
+
+        //get path
+        const char* get_path(int i,int j){return path[i][j];}
 
 		//appear or vanish in transition
 		//void vanish(RecordPage &rp,SDL_Renderer* REND,int spd );
