@@ -13,6 +13,7 @@
 #include "MENU.cpp"
 #include "Map_Page.cpp"
 #include "RECORD_PAGE.cpp"
+#include "Settings_Page.cpp"
 #include "finishPage.cpp"
 #include "name_insert_page.cpp"
 #include "Game.cpp"
@@ -36,6 +37,7 @@ enum current_page{
 	Home_page = 0,
 	Map_Page,
 	Record_Page,
+	Settings_Page,
     Finish_Page,
     Game_Page,
     InsertName_Page,
@@ -49,7 +51,8 @@ Map_Type map_parameter;
 Difficulty difficulty_parameter;
 Car_Status carintact;
 
-double volume_p = 1.0;
+double volume_m = 1.0;
+double volume_c = 1.0;
 
 
 void InitializeSDL(){
@@ -118,8 +121,6 @@ void Transition(SDL_Renderer* REND,int delaytime = 1000){
 	}
 }
 
-void volumeUp(double _s = 0.05){if(volume_p<1)	volume_p+=_s;}
-void volumeDown(double _s = 0.05){if(volume_p>0)	volume_p-=_s;}
 
 
 
@@ -136,10 +137,28 @@ int WinMain(int argc,char *argv[]){
 			printf("Renderer could not be created! SDL_Error: %s\n", SDL_GetError() );
 		}
 		else{
+			//Event handler
+			SDL_Event e;
+			bool TUTORIAL = true;
+			LTexture tutorial;
+			tutorial.loadFromFile("image/menu/tutorial.png",gRenderer);
+			tutorial.render(0,0,SCREEN_WIDTH,SCREEN_HEIGHT,gRenderer);
+			SDL_RenderPresent(gRenderer);
+			while(TUTORIAL){
+				while(SDL_PollEvent(&e)){
+				if(e.key.keysym.sym == SDLK_SPACE){
+					SDL_RenderClear(gRenderer);
+					Mix_PlayChannel(-1,buttonSound,0);
+					SDL_PumpEvents();
+					SDL_FlushEvents(SDL_FIRSTEVENT,SDL_LASTEVENT);
+					TUTORIAL = false;
+				}}
+			}
+			tutorial.free();
+
 			LTexture login;
 			login.loadFromFile("image/menu/main_menu.png",gRenderer);
-			SDL_Delay(3000);
-			for(int a = 256;a > 128;a -= 4){
+			for(int a = 256;a > 128;a -= 3){
 				SDL_Delay(10);
 				SDL_RenderClear(gRenderer);
 				login.setAlpha(a);
@@ -151,6 +170,9 @@ int WinMain(int argc,char *argv[]){
 			RecordPage rp;
 			//rp.allreset();
 			rp.read();
+
+			SettingsPage sp;
+			sp.Initialize(gRenderer);
 
             finishPage finish_page;
             finish_page.Initialize(gRenderer);
@@ -168,8 +190,7 @@ int WinMain(int argc,char *argv[]){
 			//Main loop flag
 			bool quit = false;
 
-			//Event handler
-			SDL_Event e;
+			
 
 			//check if game is running
 			bool in_play = 0;
@@ -177,13 +198,13 @@ int WinMain(int argc,char *argv[]){
 			//While application is running
 			while( !quit )
 			{
-				Mix_VolumeMusic(64*volume_p);
+				Mix_VolumeMusic(64*volume_m);
 				Uint32 game_start_time;
             	bool game_started = 0;
 				if(Mix_PlayingMusic()==0 && main_menu.PlayMusic()){
 					Mix_PlayMusic(gMusic,0);
 				}
-				Mix_Volume(-1,192*volume_p);
+				Mix_Volume(-1,128*volume_c);
 				//Handle events on queue
 				while( SDL_PollEvent( &e ) )
 				{
@@ -195,7 +216,7 @@ int WinMain(int argc,char *argv[]){
 						quit = true;
 					}
 					
-					else if ((int)STATUS < 3){
+					else if ((int)STATUS < 4){
                         
                         if(e.type == SDL_KEYDOWN){
 						switch(STATUS){
@@ -236,8 +257,10 @@ int WinMain(int argc,char *argv[]){
                                                 break;
                                             }
                                             case 3:{ 
-												Mix_HaltMusic();                                              
-                                                quit = true;
+												STATUS = Settings_Page;
+												Mix_PlayChannel(-1,changePageSound,0);
+											    Transition(gRenderer);
+												sp.show(gRenderer);
                                                 break;
                                             }                                       
                                         }
@@ -252,8 +275,6 @@ int WinMain(int argc,char *argv[]){
 									case SDLK_DOWN:mp.DOWN_opt();break;
 									case SDLK_LEFT:mp.left_opt();break;
 									case SDLK_RIGHT:mp.right_opt();break;
-									case SDLK_KP_PLUS:volumeUp();break;
-									case SDLK_KP_MINUS:volumeDown();break;
 									case SDLK_RETURN:{
 										if(mp.ifMapChosen()){
 											STATUS = Game_Page;
@@ -322,6 +343,77 @@ int WinMain(int argc,char *argv[]){
 							}
                             break;					
 							}
+							case Settings_Page:{
+								switch(e.key.keysym.sym){
+									case SDLK_UP:sp.UP_opt();break;
+									case SDLK_DOWN:sp.DOWN_opt();break;
+									case SDLK_LEFT:sp.left_opt();break;
+									case SDLK_RIGHT:sp.right_opt();break;
+									case SDLK_ESCAPE:{
+										if(!sp.get_confirm()){
+											sp.Initialize(gRenderer);
+											STATUS = Home_page;
+											Mix_PlayChannel(-1,backSound,0);
+											Transition(gRenderer);
+											main_menu.Initialize(gRenderer);
+											main_menu.choosing(main_menu.opt,gRenderer);
+											main_menu.appear(gRenderer);
+										}
+										else{
+											sp.switchPage();
+											sp.Initialize(gRenderer);
+											Mix_PlayChannel(-1,backSound,0);
+										}
+										break;
+									}
+									case SDLK_RETURN:{
+										if(!sp.get_confirm()&&sp.get_opt()==2){
+											sp.switchPage();
+											Mix_PlayChannel(-1,changePageSound,0);										
+										}
+										else{
+											if(sp.get_RQ()==1){
+												if(sp.get_LR()==0){
+													if(!sp.get_reset()){
+														if(sp.get_LR()==0){
+															sp.Reset();
+															rp.allreset();
+														}
+														else{
+															sp.switchPage();
+															sp.Initialize(gRenderer);
+														}
+													}
+													else{
+														sp.switchPage();
+														sp.Initialize(gRenderer);
+													}
+													
+												}
+												else{
+													sp.switchPage();
+													sp.Initialize(gRenderer);
+												}
+												Mix_PlayChannel(-1,changePageSound,0);
+											}
+											else{												
+												if(sp.get_LR()==0){
+													quit = true;
+													Mix_HaltMusic();
+												}
+												else{
+													sp.switchPage();
+													sp.Initialize(gRenderer);
+													Mix_PlayChannel(-1,changePageSound,0);
+												}
+											}
+										}										
+										break;
+									}
+								}
+								if(STATUS == Settings_Page)sp.show(gRenderer);
+								break;
+							}
                             
                             
 						}
@@ -377,7 +469,7 @@ int WinMain(int argc,char *argv[]){
 							}
 
 						}
-						Mix_VolumeChunk(countdown,32*volume_p);
+						Mix_VolumeChunk(countdown,32*volume_c);
 						Mix_PlayChannel(-1,countdown,0);
 						game_start_time = SDL_GetTicks();
 						while(SDL_GetTicks()-game_start_time<4700){
@@ -397,8 +489,8 @@ int WinMain(int argc,char *argv[]){
 
 						while( !quit && in_play == 1){
 							//calculate time
-							Mix_VolumeMusic(192*volume_p);
-							Mix_Volume(-1,128*volume_p);
+							Mix_VolumeMusic(192*volume_m);
+							Mix_Volume(-1,128*volume_c);
 							Uint32 time_start = SDL_GetTicks();
 							while( SDL_PollEvent( &e ) != 0){
 									if( e.type == SDL_QUIT ){
@@ -406,8 +498,6 @@ int WinMain(int argc,char *argv[]){
 									}
 									
 							}
-							if(keyarr[SDL_SCANCODE_LEFTBRACKET]){volumeDown(0.01);}
-							else if(keyarr[SDL_SCANCODE_RIGHTBRACKET]){volumeUp(0.01);}
 							if(keyarr[SDL_SCANCODE_LEFT])
 								car_main->move_left();
 							if(keyarr[SDL_SCANCODE_RIGHT])

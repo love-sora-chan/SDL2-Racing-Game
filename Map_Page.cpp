@@ -15,6 +15,7 @@ extern const int SCREEN_HEIGHT ;
 #define MAP_PAGE
 extern Mix_Chunk* textsound;
 extern Mix_Chunk* buttonSound;
+extern double volume_c;
 class MapPage{
     private:
         int map_opt,car_opt,difficulty_opt;
@@ -107,7 +108,7 @@ void MapPage::DOWN_opt(){
 
 void MapPage::showNameEffect(std::string str,SDL_Renderer* REND){
     std::string temp = "";
-    Mix_Volume(-1,64);
+    Mix_Volume(-1,64*volume_c);
     for(int i=0;i<str.length();i++){
         SDL_RenderClear(REND);
         map.render(40,40,560,560,REND);
@@ -120,7 +121,7 @@ void MapPage::showNameEffect(std::string str,SDL_Renderer* REND){
     }
     mapname = str;
     SDL_Delay(100);
-    Mix_Volume(-1,128);
+    Mix_Volume(-1,128*volume_c);
     SDL_PumpEvents();
     SDL_FlushEvents(SDL_FIRSTEVENT,SDL_LASTEVENT);
 }
@@ -134,11 +135,12 @@ void MapPage::show(SDL_Renderer* REND){
     
         //map picture
         switch(getMap()){
-            case 0:{
-                map2.setAlpha(16);
+            case 0:{                
                 map2.loadFromFile("image/menu/night.png",REND);
+                map2.setAlpha(200);
                 map2.render(SCREEN_WIDTH*0.5-480,SCREEN_HEIGHT-480,320,320,REND);
-                map2.loadFromFile("image/menu/dusk.png",REND);
+                map2.loadFromFile("image/menu/redmoon.png",REND);
+                map2.setAlpha(200);
                 map2.render(SCREEN_WIDTH*0.5+160,SCREEN_HEIGHT-480,320,320,REND);
 
                 map.setAlpha(255);
@@ -147,24 +149,26 @@ void MapPage::show(SDL_Renderer* REND){
 
                 break;
             }
-            case 1:{
-                map2.setAlpha(16);
+            case 1:{                
                 map2.loadFromFile("image/menu/noon.png",REND);
+                map2.setAlpha(200);
                 map2.render(SCREEN_WIDTH*0.5-480,SCREEN_HEIGHT-480,320,320,REND);
                 map2.loadFromFile("image/menu/night.png",REND);
+                map2.setAlpha(200);
                 map2.render(SCREEN_WIDTH*0.5+160,SCREEN_HEIGHT-480,320,320,REND);
 
                 map.setAlpha(255);
-                map.loadFromFile("image/menu/dusk.png",REND);
+                map.loadFromFile("image/menu/redmoon.png",REND);
                 map.render(SCREEN_WIDTH*0.5-240,SCREEN_HEIGHT-560,480,480,REND);
 
                 break;
             }
             case 2:{
-                map2.setAlpha(16);
-                map2.loadFromFile("image/menu/dusk.png",REND);
+                map2.loadFromFile("image/menu/redmoon.png",REND);
+                map2.setAlpha(200);
                 map2.render(SCREEN_WIDTH*0.5-480,SCREEN_HEIGHT-480,320,320,REND);
                 map2.loadFromFile("image/menu/noon.png",REND);
+                map2.setAlpha(200);
                 map2.render(SCREEN_WIDTH*0.5+160,SCREEN_HEIGHT-480,320,320,REND);
 
                 map.setAlpha(255);
@@ -196,8 +200,8 @@ void MapPage::show(SDL_Renderer* REND){
                 break;
             }
             case 1:{
-                map.loadFromFile("image/menu/dusk.png",REND);
-                if(showEffect){showNameEffect("SEAWAY DUSK",REND);showEffect = false;}
+                map.loadFromFile("image/menu/redmoon.png",REND);
+                if(showEffect){showNameEffect("SEAWAY REDMOON",REND);showEffect = false;}
                 else{
                     map.render(40,40,560,560,REND);
                     text.loadFromRenderedText(mapname,White,REND,mapFont);

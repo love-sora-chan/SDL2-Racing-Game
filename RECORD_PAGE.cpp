@@ -24,7 +24,7 @@ extern Mix_Chunk* buttonSound;
 TTF_Font* Font;
 TTF_Font* Font2;
 */
-std::string record_mapname[3] = {"Noon","Dusk","Night"};
+std::string record_mapname[3] = {"Noon","Redmoon","Night"};
 std::string record_difficulty[3] = {"Easy","Medium","Hard"};
 
 class RecordPage{
@@ -112,7 +112,7 @@ void RecordPage::right_opt(){
 void RecordPage::mapchange(SDL_Renderer* REND){
     switch(map_option){
         case 0:background.loadFromFile("image/menu/noon.png",REND);break;
-        case 1:background.loadFromFile("image/menu/dusk.png",REND);break;
+        case 1:background.loadFromFile("image/menu/redmoon.png",REND);break;
         case 2:background.loadFromFile("image/menu/night.png",REND);break;
     }
     background.setAlpha(64);

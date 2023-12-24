@@ -518,8 +518,6 @@ class Car3D : public Objects{
 
         SDL_Texture * car_texture;
     public:
-        Car3D():Objects(1650,3){}
-
         Car3D(bool main_car):Objects(1650,3){
             this->main_car = main_car;
         }        
