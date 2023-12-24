@@ -41,11 +41,11 @@ class RecordPage{
         Record record[3][3];
 
 		//initialize
-        RecordPage():path({
+        RecordPage():path{
         {"GameRecords/noon_easy.txt","GameRecords/noon_medium.txt","GameRecords/noon_hard.txt"},
         {"GameRecords/dusk_easy.txt","GameRecords/dusk_medium.txt","GameRecords/dusk_hard.txt"},
         {"GameRecords/night_easy.txt","GameRecords/night_medium.txt","GameRecords/night_hard.txt"}
-        }){}
+        }{}
 
 		void allreset();
         void read();
