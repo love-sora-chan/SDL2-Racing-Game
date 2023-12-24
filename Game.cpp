@@ -151,7 +151,7 @@ class Objects{
     public:
         Objects():x(0), y(0), z(0), vx(0), vy(0), vz(0), scale(0), original_scale(2),screenX(0), screenY(0), picture_width(0), picture_height(0){}
         Objects(int new_z,double org_scale):x(0), y(0), z(new_z), vx(0), vy(0), vz(0), scale(0), original_scale(org_scale),screenX(0), screenY(0), picture_width(0), picture_height(0){}
-
+        ~Objects(){}
         //get values
         double get_x(){return x;}
         double get_y(){return y;}
@@ -224,6 +224,8 @@ class Line3D : public Objects{
     public:
         Line3D():Objects(), curve(0){
         }
+
+        ~Line3D(){}
         //3D coordinate to screen coordinate
         void project(Camera3D * cam){
             double delta_z = (z - cam->get_z() <= 10 ? 10 : z - cam->get_z());
@@ -257,6 +259,10 @@ public:
         this->x=x, this->y=y, this->segment_number_position=segment_number_position, this->type = type, this->original_scale = original_scale ;
         z = segment_number_position * segement_length;
         resolve_file_attributes();
+    }
+
+    ~Obstacle3D(){
+        SDL_DestroyTexture(obstacle_texture);
     }
 
     void change_type( Obstacle_Type type){
@@ -330,6 +336,9 @@ public:
         BgdestViewport.h = 0;
         BgdestViewport.x = 0;
         BgdestViewport.y = 0;
+    }
+    ~Background(){
+
     }
     int get_picture_width(){return picture_width;}
     int get_picture_height(){return picture_height;}
@@ -491,6 +500,7 @@ public :
         //delete Obstacles;
         delete [] Obstacles_Location;
         //delete Obstacles_Location;
+        delete background;
     }
 
     
@@ -498,7 +508,7 @@ public :
 };
 
 class Car3D : public Objects{
-    private:
+    protected:
         bool main_car;
         Car_Status car_status = Intact;
         
@@ -506,25 +516,16 @@ class Car3D : public Objects{
         std::string file_pos;
         double shift = 0;
 
-       
-
         SDL_Texture * car_texture;
     public:
-        Car3D():Objects(1650,3){
-        }
+        Car3D():Objects(1650,3){}
 
-        Car3D(Car_Type type , bool main_car):Objects(1650,3){
-            this->type = type, this->main_car = main_car;
-            resolve_file_attributes();
+        Car3D(bool main_car):Objects(1650,3){
+            this->main_car = main_car;
         }        
-        Car3D(double x, double y, double z, double vx,double vz, Car_Type type,  double original_scale,  bool main_car):Objects(1650,3){
-            this->x=x, this->y=y, this->z=z,  this->vx=vx, this->vz=vz, this->type = type,this->original_scale = original_scale, this->main_car = main_car;
-            resolve_file_attributes();
-        }
 
-        void change_type( Car_Type type){
-            this->type = type;
-            resolve_file_attributes();
+        ~Car3D(){
+            SDL_DestroyTexture(car_texture);
         }
 
         Car_Status is_car_intact(){
@@ -547,24 +548,24 @@ class Car3D : public Objects{
             return vz;
         }
 
-        double accelerate(){
-            vz += 1000.0/(pow(vz,0.5)+1000.0/7);
+        virtual double accelerate(){
+            vz += 5;
             return vz;
         }
 
-        double decelerate(){
-            vz -= 25;
+        virtual double decelerate(){
+            vz -= 5;
             vz = ( vz>=0 ? vz : 0 );
             return vz;
         }
 
-        double move_left(){
-            x -= log(vz/1000+1)*60;
+        virtual double move_left(){
+            x -= 1;
             //x += log2(vz+1) * -1;
             return x;
         }
-        double move_right(){
-            x += log(vz/1000+1)*60;
+        virtual double move_right(){
+            x += 1;
             //x += log2(vz+1);
             return x;
         }
@@ -575,25 +576,7 @@ class Car3D : public Objects{
             shift += -1 * log2(vz+1) * 2 * map->get_curve( (int) (z / segement_length) );
         }
 
-        void resolve_file_attributes(){
-            switch(type){
-                case AE86:
-                picture_width = 100;
-                picture_height = 100;
-                break;
-
-                case R7X:
-                picture_width = 100;
-                picture_height = 100;   
-                break;
-            }
-            car_texture = Car_Textures[(int) type];
-        }
-
         void project(Camera3D * cam){
-            
-
-
             if(main_car==1){cam->increment_x(vx); cam->increment_z(vz);}
             scale = cam->get_D()/(z-cam->get_z())*0.1;
             //scale = 0.01;
@@ -611,6 +594,66 @@ class Car3D : public Objects{
         }
 
         SDL_Texture * get_car_texture(){return car_texture;}
+};
+
+class Car3D_AE86 : public Car3D{
+    public:
+        Car3D_AE86(bool is_main_car):Car3D(is_main_car){
+            picture_width = 100;
+            picture_height = 100;
+            car_texture = Car_Textures[(int)AE86];
+        }
+        double accelerate()override{
+            vz += 1000.0/(pow(vz,0.5)+1000.0/7);
+            return vz;
+        }
+
+        double decelerate()override{
+            vz -= 25;
+            vz = ( vz>=0 ? vz : 0 );
+            return vz;
+        }
+
+        double move_left()override{
+            x -= log(vz/1000+1)*60;
+            //x += log2(vz+1) * -1;
+            return x;
+        }
+        double move_right()override{
+            x += log(vz/1000+1)*60;
+            //x += log2(vz+1);
+            return x;
+        }
+};
+
+class Car3D_R7X : public Car3D{
+    public:
+        Car3D_R7X(bool is_main_car):Car3D(is_main_car){
+            picture_width = 100;
+            picture_height = 100;
+            car_texture = Car_Textures[(int)R7X];
+        }
+        double accelerate()override{
+            vz += 6*exp(-0.0005*(vz-1000))+5;
+            return vz;
+        }
+
+        double decelerate()override{
+            vz -= 15;
+            vz = ( vz>=0 ? vz : 0 );
+            return vz;
+        }
+
+        double move_left()override{
+            x -= log(vz/1000+1)*30;
+            //x += log2(vz+1) * -1;
+            return x;
+        }
+        double move_right()override{
+            x += log(vz/1000+1)*30;
+            //x += log2(vz+1);
+            return x;
+        }
 };
 
 
@@ -759,27 +802,27 @@ void Fell_into_Ocean(Car3D * car, Map * map){
     }
 }
 
-void draw_words(SDL_Renderer * renderer, std::string ss, int screenx, int screeny, int font_size){
-    gFont = TTF_OpenFont( "ttf_fonts/ark-pixel-10px-monospaced-zh_tw.ttf", 10 );
-    if( gFont == NULL )
+void draw_words(SDL_Renderer * renderer, std::string ss, int screenx, int screeny, int font_size, SDL_Color color){
+    //Render text
+    //SDL_Color ForegorundtextColor = { 255, 255, 255 };
+    //SDL_Color BackgorundtextColor = { 0, 0, 0 };
+    TTF_SetFontSize(gFont, font_size);
+    if( !gTextTexture.loadFromRenderedText( ss, color , renderer, gFont) )
     {
-        printf( "Failed to load font! SDL_ttf Error: %s\n", TTF_GetError() );
+        printf( "Failed to render text texture!\n" );
     }
-    else
-    {
-        //Render text
-        SDL_Color ForegorundtextColor = { 255, 255, 255 };
-        //SDL_Color BackgorundtextColor = { 0, 0, 0 };
-        TTF_SetFontSize(gFont, 50);
-        if( !gTextTexture.loadFromRenderedText( ss, ForegorundtextColor , renderer, gFont) )
-        {
-            printf( "Failed to render text texture!\n" );
-        }
-        gTextTexture.render(( screenx - gTextTexture.getWidth()/ 2  ) , ( screeny - gTextTexture.getHeight()/ 2  ) , renderer );
-
-    }
+    gTextTexture.render(( screenx - gTextTexture.getWidth()/ 2  ) , ( screeny - gTextTexture.getHeight()/ 2  ) , renderer );
 
     gTextTexture.free();
+}
+
+void show_tutorial(SDL_Renderer * renderer){
+    SDL_RenderClear(renderer);
+    draw_words(renderer,"Arrow Key UP ↑ /DOWN ↓ to accelerate/decelerate",SCREEN_WIDTH/2,SCREEN_HEIGHT*1/5,50,White);
+    draw_words(renderer,"Arrow Key LEFT ← /RIGHT → to go left/right",SCREEN_WIDTH/2,SCREEN_HEIGHT*2/5,50,White);
+    draw_words(renderer,"Hit Rock = Die. Hit Cone = Slow Down.",SCREEN_WIDTH/2,SCREEN_HEIGHT*3/5,50,White);
+    draw_words(renderer,"Press Enter to start game",SCREEN_WIDTH/2,SCREEN_HEIGHT*4/5,50,White);
+    SDL_RenderPresent(renderer);
 }
 
 Uint32 show_time(SDL_Renderer * renderer ,Uint32 start_time, Uint32 curr_time ,bool game_started){
@@ -791,7 +834,7 @@ Uint32 show_time(SDL_Renderer * renderer ,Uint32 start_time, Uint32 curr_time ,b
     stream << std::fixed << std::setprecision(3) << (double)elapsed_time/1000 <<"s";
     std::string stringValue = stream.str();
     stringValue = stream.str();
-    draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*1/10,50);
+    draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*1/10,50,White);
     stream.str("");
     stream.clear();
     return elapsed_time;
@@ -802,7 +845,7 @@ void show_percentage( SDL_Renderer * renderer, Map * map ,Car3D * car){
     stream << std::fixed << std::setprecision(2) << car->get_z()/(map->Finish_Line_segement_number*segement_length)*100<<'%';
     std::string stringValue = stream.str();
     stringValue = stream.str();
-    draw_words(renderer, stringValue , SCREEN_WIDTH*1/10, SCREEN_HEIGHT*9/10,50);
+    draw_words(renderer, stringValue , SCREEN_WIDTH*1/10, SCREEN_HEIGHT*9/10,50,White);
     stream.str("");
     stream.clear();
 }
@@ -811,7 +854,27 @@ void show_speed(SDL_Renderer * renderer, Car3D * car){
     std::ostringstream stream;
     stream << std::fixed << std::setprecision(2) << car->get_vz() / 20 <<"km/hr";
     std::string stringValue = stream.str();
-    draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*9/10,50);
+    draw_words(renderer, stringValue , SCREEN_WIDTH*9/10, SCREEN_HEIGHT*9/10,50,White);
+    stream.str("");
+    stream.clear();
+}
+
+
+void show_fps(SDL_Renderer * renderer, Uint32 elapsed_time){
+    static int cnt = 0;
+    static double fps = 0;
+    static double curr_fps = 0;
+    std::ostringstream stream;
+    fps += 1000/(double)elapsed_time;
+    cnt += 1;
+    if(cnt==10){
+        curr_fps = fps/10;
+        cnt = 0;
+        fps = 0;
+    }
+    stream << std::fixed << std::setprecision(2) << curr_fps <<" fps";
+    std::string stringValue = stream.str();
+    draw_words(renderer, stringValue , SCREEN_WIDTH*1/20, SCREEN_HEIGHT*1/20,25,White);
     stream.str("");
     stream.clear();
 }
@@ -920,16 +983,14 @@ void draw_scene(SDL_Renderer * renderer, Map * map, Camera3D * cam, Car3D * car,
     } 
 }
 
-void framerate_cap(Uint32 start, int fps){
-    static int cnt = 0;
+Uint32 framerate_cap(Uint32 start, int fps){
+    //static int cnt = 0;
     double ms_per_frame = 1000/fps;
     double elapsed_time = (double) (SDL_GetTicks() - start);
-    if( elapsed_time < ms_per_frame ){
-        SDL_Delay( (int) (ms_per_frame - elapsed_time) );
-    }
-    
-    if(cnt==10){std::cout<<elapsed_time<<'\n';cnt=0;}
-    else{cnt++;}
+    if( elapsed_time < ms_per_frame ){SDL_Delay( (int) (ms_per_frame - elapsed_time) );}
+    //if(cnt==10){std::cout<<elapsed_time<<'\n';cnt=0;}
+    //else{cnt++;}
+    return (elapsed_time > ms_per_frame) ? elapsed_time : ms_per_frame;
     
 }
 
@@ -937,6 +998,8 @@ void framerate_cap(Uint32 start, int fps){
 
 //functions for main 
 void load_game_media(SDL_Renderer * renderer, Map_Type type, Difficulty difficulty){
+    gFont = TTF_OpenFont( "font/ark-pixel-10px-monospaced-zh_tw.ttf", 10 );
+    if( gFont == NULL ){std::cout<< "Failed to load font! SDL_ttf Error: "<<TTF_GetError();}
     crash = Mix_LoadWAV("audio/crash.wav");
     if(crash==NULL){ std::cout<<"Mix_LoadWav error\n";}
     decelerating = Mix_LoadWAV("audio/car_break.wav");
@@ -982,6 +1045,7 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
     Obstacle_build * obstacle_details;
     int density;
     int total_segment_length, finish_line_segment_length;
+    std::pair<std::pair<int,int>,double> * Nodes;
     switch(difficulty){
         case Easy:
             density = 75;
@@ -998,7 +1062,7 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
         {
             total_segment_length = 12000,finish_line_segment_length = 10000;
             int Node_number = 15;
-            std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
+            Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
             Nodes[0] = std::make_pair( std::make_pair(100,300) , 0.2 );
             Nodes[1] = std::make_pair( std::make_pair(500,1000) , -0.5 );
             Nodes[2] = std::make_pair( std::make_pair(1000,1200) , 1 );
@@ -1043,7 +1107,7 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
         {
             int total_segment_length = 13000, finish_line_segment_length = 12000;
             int Node_number = 27;
-            std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
+            Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
             Nodes[0] = std::make_pair( std::make_pair(500,800) , 0.2 );
             Nodes[1] = std::make_pair( std::make_pair(801,1200) , -0.2 );
             Nodes[2] = std::make_pair( std::make_pair(1201,1300) , 1.3 );
@@ -1093,13 +1157,14 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
             obstacle_details[Obstacle_number-1].segment_number_position = finish_line_segment_length ;
             obstacle_details[Obstacle_number-1].original_scale = 10;
 
-            map = new Map("map",total_segment_length,Node_number,Nodes, Obstacle_number, obstacle_details,finish_line_segment_length,type);            break;        
+            map = new Map("map",total_segment_length,Node_number,Nodes, Obstacle_number, obstacle_details,finish_line_segment_length,type);
+            break;        
         }
         case Seaways_Night:
         {
             int total_segment_length = 12000, finish_line_segment_length = 11000;
             int Node_number = 27;
-            std::pair<std::pair<int,int>,double> * Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
+            Nodes = new std::pair<std::pair<int,int>,double>[Node_number];
             Nodes[0] = std::make_pair( std::make_pair(600,900) , 0.2 );
             Nodes[1] = std::make_pair( std::make_pair(901,1100) , -0.2 );
             Nodes[2] = std::make_pair( std::make_pair(1201,1400) , 1.1 );
@@ -1148,25 +1213,50 @@ void create_map(Map_Type type, Difficulty difficulty, Map * &map){
             obstacle_details[Obstacle_number-1].segment_number_position = finish_line_segment_length ;
             obstacle_details[Obstacle_number-1].original_scale = 10;
 
-            map = new Map("map",total_segment_length,Node_number,Nodes, Obstacle_number, obstacle_details,finish_line_segment_length,type);            break;        
+            map = new Map("map",total_segment_length,Node_number,Nodes, Obstacle_number, obstacle_details,finish_line_segment_length,type);
+            break;        
         }
 
     };
     delete [] obstacle_details;
-    //delete obstacle_details;
-
-
-
+    /*
+    if(Nodes==NULL){std::cout<<"Node is NULL at create_map\n";}
+    else{
+        delete [] Nodes;
+    }
+    */
+    
 }
 
 void create_camera(){cam = new Camera3D(0,1550,100,5,0,0);}
 
-void create_car(Car_Type type){car_main = new Car3D(type,true);}
+void create_car(Car_Type type){
+    switch(type){
+        case AE86:
+            car_main = new Car3D_AE86(true);
+            break;
+        case R7X:
+            car_main = new Car3D_R7X(true);
+            break;
+    }
+    
+}
 
 void close_game(){
     Mix_FreeChunk(crash);
     Mix_FreeMusic(music);
-    map = NULL;
+    for(int i = 0 ; i < Num_Of_Cars ; i++){
+        SDL_DestroyTexture(Car_Textures[i]);
+    }
+    for(int i = 0 ; i < Num_Of_Obstacles ; i++){
+        SDL_DestroyTexture(Obstacle_Textures[i]);
+    }
+    SDL_DestroyTexture(Background_Texture);
+
+    //delete map;
+    delete map;
+    //delete car_main;
+    //delete cam;
 
     //Free loaded images
     gTextTexture.free();
