@@ -223,8 +223,6 @@ int WinMain(int argc,char *argv[]){
 							case Home_page:{
                                 {
 								switch(e.key.keysym.sym){
-									case SDLK_RIGHT:volumeUp();break;
-									case SDLK_LEFT:volumeDown();break;
 									case SDLK_UP:{
 										SDL_RenderClear(gRenderer);
                                         Mix_PlayChannel(-1,buttonSound,0);                                       
@@ -308,8 +306,6 @@ int WinMain(int argc,char *argv[]){
 							}
 							case Record_Page:{                                							
                             switch(e.key.keysym.sym){
-								case SDLK_KP_PLUS:volumeUp();break;
-								case SDLK_KP_MINUS:volumeDown();break;
                                 case SDLK_ESCAPE:{
                                     STATUS = Home_page;
 									Mix_PlayChannel(-1,backSound,0);
@@ -625,8 +621,6 @@ int WinMain(int argc,char *argv[]){
 					}
                     else if(STATUS == InsertName_Page){
 						main_menu.setPlayMusic(true);
-						if(e.key.keysym.sym == SDLK_KP_PLUS)volumeUp();
-						if(e.key.keysym.sym == SDLK_KP_MINUS)volumeDown();
                         if(e.key.keysym.sym == SDLK_RETURN){
                             if(inp.name.length()==0)
                                 inp.name = "UNKNOWN";
